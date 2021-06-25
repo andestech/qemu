@@ -46,6 +46,9 @@ enum feature_enable_register {
     FER_VECTORED = (1u << 1),
 };
 
+#define PLICSW_CONTEXT_PER_HART     0x1000
+#define PLICSW_CONTEXT_CLAIM        0x4
+
 static uint64_t
 andes_plic_read(void *opaque, hwaddr addr, unsigned size);
 
@@ -167,6 +170,16 @@ andes_plic_read(void *opaque, hwaddr addr, unsigned size)
             break;
         }
 
+        if (ss->m_mode_mip_mask == MIP_MSIP) {
+            CPUState *cpu = current_cpu;
+            CPURISCVState *env = cpu->env_ptr;
+            hwaddr claim = ss->context_base + PLICSW_CONTEXT_CLAIM + PLICSW_CONTEXT_PER_HART * env->mhartid;
+
+            if (addr == claim) {
+                return 0;
+            }
+        }
+
         memory_region_dispatch_read(&s->parent_mmio, addr, &value, size,
                                     MEMTXATTRS_UNSPECIFIED);
 
@@ -209,12 +222,30 @@ andes_plic_write(void *opaque, hwaddr addr, uint64_t value, unsigned size)
     if (addr >= ss->pending_base &&
         addr < ss->pending_base + (ss->num_sources >> 3)) {
         word = (addr - ss->pending_base) >> 2;
-        xchg = ss->pending[word] ^ (uint32_t)value;
-        if (xchg) {
-            ss->pending[word] = value;
-            /* hack! trigger sifive_plic_update */
-            sifive_plic_lower_irq(ss, 0);
+
+        if (ss->m_mode_mip_mask == MIP_MSIP) {
+            CPUState *cpu = current_cpu;
+            CPURISCVState *env = cpu->env_ptr;
+            uint32_t mask = 0xff << (8 * env->mhartid);
+            int hartid;
+
+            value &= mask;
+            value >>= (8 * env->mhartid);
+            for (hartid = 0; hartid < 8; hartid++) {
+                if (value & (1 << (7 - hartid))) {
+                    CPUState *dst = qemu_get_cpu(hartid);
+                    riscv_cpu_update_mip(RISCV_CPU(dst), MIP_MSIP, BOOL_TO_MASK(1));
+                }
+            }
+        } else {
+            xchg = ss->pending[word] ^ (uint32_t)value;
+            if (xchg) {
+                ss->pending[word] = value;
+                /* hack! trigger sifive_plic_update */
+                sifive_plic_lower_irq(ss, 0);
+            }
         }
+
         return;
     }
 
@@ -240,6 +271,17 @@ andes_plic_write(void *opaque, hwaddr addr, uint64_t value, unsigned size)
             word = (addr - REG_TRIGGER_TYPE_BASE) >> 2;
             s->trigger_type[word] |= value;
             break;
+        }
+
+        if (ss->m_mode_mip_mask == MIP_MSIP) {
+            CPUState *cpu = current_cpu;
+            CPURISCVState *env = cpu->env_ptr;
+            hwaddr claim = ss->context_base + PLICSW_CONTEXT_CLAIM + PLICSW_CONTEXT_PER_HART * env->mhartid;
+
+            if (addr == claim) {
+                riscv_cpu_update_mip(RISCV_CPU(cpu), MIP_MSIP, BOOL_TO_MASK(0));
+                return;
+            }
         }
 
         memory_region_dispatch_write(&s->parent_mmio, addr, value, size,
