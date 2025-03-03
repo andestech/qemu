@@ -7,6 +7,7 @@ gen = [
   decodetree.process('XVentanaCondOps.decode', extra_args: '--static-decode=decode_XVentanaCodeOps'),
   decodetree.process('XAndesV5Ops.decode', extra_args: ['--static-decode=decode_XAndesV5Ops']),
   decodetree.process('XAndesAce.decode', extra_args: ['--static-decode=decode_XAndesAce']),
+  decodetree.process('XAndesVMM.decode', extra_args: ['--static-decode=decode_XAndesVMM']),
   decodetree.process('XAndesCodenseOps.decode',extra_args: ['--static-decode=decode_XAndesCodenseOps',
                                                              '--insnwidth=16']),
 ]

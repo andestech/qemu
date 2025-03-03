@@ -18,8 +18,7 @@
 #include "exec/address-spaces.h"
 #include "qemu/andes-config.h"
 
-static RISCVException any(CPURISCVState *env,
-                          int csrno)
+static RISCVException any(CPURISCVState *env, int csrno)
 {
     return RISCV_EXCP_NONE;
 }
@@ -65,6 +64,18 @@ static RISCVException mcfg3(CPURISCVState *env, int csrno)
         }
     }
     return RISCV_EXCP_ILLEGAL_INST;
+}
+
+static RISCVException amm(CPURISCVState *env, int csrno)
+{
+    AndesCsr *csr = &env->andes_csr;
+    if (mcfg3(env, csrno) != RISCV_EXCP_NONE) {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+    if (get_field(csr->csrno[CSR_MMSC_CFG3], MASK_MMSC_CFG3_AMM) == 0) {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+    return RISCV_EXCP_NONE;
 }
 
 static RISCVException ecc(CPURISCVState *env, int csrno)
@@ -471,6 +482,29 @@ static RISCVException write_ucode(CPURISCVState *env, int csrno,
                                   target_ulong val)
 {
     env->andes_csr.csrno[CSR_UCODE] = val & WRITE_MASK_CSR_UCODE;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_uzobctl(CPURISCVState *env, int csrno,
+                                    target_ulong val)
+{
+    uint8_t new_active_m = get_field(val, MASK_UZOBCTL_ACTIVE_M);
+    uint8_t new_active_n = get_field(val, MASK_UZOBCTL_ACTIVE_N);
+    uint8_t new_active_k = get_field(val, MASK_UZOBCTL_ACTIVE_K);
+
+    if (new_active_m < 1 || new_active_m > env->amm_default_active_m) {
+        new_active_m = env->amm_default_active_m;
+    }
+    if (new_active_n < 1 || new_active_n > env->amm_default_active_n) {
+        new_active_n = env->amm_default_active_n;
+    }
+    if (new_active_k < 1 || new_active_k > env->amm_default_active_k) {
+        new_active_k = env->amm_default_active_k;
+    }
+
+    env->andes_csr.csrno[CSR_UZOBCTL] = new_active_m << 16 |
+                                        new_active_n <<  8 |
+                                        new_active_k;
     return RISCV_EXCP_NONE;
 }
 
@@ -987,6 +1021,7 @@ static AndesCsrConfigInfo csr_mmsc_cfg2_map[]  = {
 
 static AndesCsrConfigInfo csr_mmsc_cfg3_map[]  = {
     {CONFIG_BOOL,   MASK_MMSC_CFG3_HVMCSR, "mmsc-cfg-hvmcsr"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG3_AMM, "mmsc-cfg-amm"},
 };
 
 static AndesCsrConfigInfo csr_mrvarch_cfg_map[] = {
@@ -1383,6 +1418,8 @@ riscv_csr_operations andes_csr_ops[CSR_TABLE_SIZE] = {
     [CSR_UITB]           = { "uitb",              ecd,   read_csr, write_uitb },
     [CSR_UCODE]          = { "ucode",             edsp,  read_csr,
                                                          write_ucode          },
+    [CSR_UZOBCTL]        = { "uzobctl",           amm,   read_csr,
+                                                         write_uzobctl        },
     [CSR_UDCAUSE]        = { "udcause",           any,   read_csr, write_csr  },
     [CSR_UCCTLBEGINADDR] = { "ucctlbeginaddr",    ucctl, read_csr, write_csr  },
     [CSR_UCCTLCOMMAND]   = { "ucctlcommand",      ucctl, read_csr, write_csr  },

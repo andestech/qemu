@@ -1,0 +1,41 @@
+#
+# RISC-V translation routines for Andes Vector Matrix Multiplication
+#
+# Copyright (c) 2025 Andes Technology Corp.
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+
+
+# Fields:
+%vd        7:5
+%vs        7:5
+%vs1       15:5
+%vs2       20:5
+%rs1       15:5
+%rs2       20:5
+
+# Argument sets:
+&vmm_a     vs2 vs1 vd
+&vmm_ld    rs2 rs1 vd
+&vmm_st    rs2 rs1 vs
+
+# Formats 32:
+@arith   ... .... ..... ..... ... ..... ....... &vmm_a   %vs2 %vs1 %vd
+@load    ... .... ..... ..... ... ..... ....... &vmm_ld  %rs2 %rs1 %vd
+@store   ... .... ..... ..... ... ..... ....... &vmm_st  %rs2 %rs1 %vs
+
+## Andes VMM instructions
+andes_vqammuu_vv   001 0000 ..... ..... 100 ..... 1011011 @arith
+andes_vqammus_vv   001 0001 ..... ..... 100 ..... 1011011 @arith
+andes_vqammsu_vv   001 0010 ..... ..... 100 ..... 1011011 @arith
+andes_vqammss_vv   001 0011 ..... ..... 100 ..... 1011011 @arith
+
+andes_vle8_mk      001 0100 ..... ..... 100 ..... 1011011 @load
+andes_vle8_nk      001 0101 ..... ..... 100 ..... 1011011 @load
+andes_vle8_kn      001 0110 ..... ..... 100 ..... 1011011 @load
+andes_vle32_mn     001 0111 ..... ..... 100 ..... 1011011 @load
+
+andes_vse8_nk      001 1000 ..... ..... 100 ..... 1011011 @store
+andes_vse8_kn      001 1001 ..... ..... 100 ..... 1011011 @store
+andes_vse32_nm     001 1010 ..... ..... 100 ..... 1011011 @store
+andes_vse32_mn     001 1011 ..... ..... 100 ..... 1011011 @store

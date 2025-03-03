@@ -519,6 +519,11 @@ struct CPUArchState {
     void *ace_acr_info_list;
     unsigned char *ace_acr_value;
 
+    /* Andes VMM default setting */
+    uint8_t amm_default_active_m;
+    uint8_t amm_default_active_n;
+    uint8_t amm_default_active_k;
+
 #ifndef CONFIG_USER_ONLY
     MemoryRegion *cpu_as_root;
     MemoryRegion *cpu_as_mem;

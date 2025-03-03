@@ -62,6 +62,11 @@ target_ulong HELPER(vsetvl)(CPURISCVState *env, target_ulong s1,
         }
     }
 
+    if (cpu->cfg.ext_XAndesVMM) {
+        /* Write 0 to reset uzobctl to the default value */
+        csr_ops[CSR_UZOBCTL].write(env, CSR_UZOBCTL, 0);
+    }
+
     if ((sew > cpu->cfg.elen) || vill || (ediv != 0) || (reserved != 0)) {
         /* only set vill bit. */
         env->vill = 1;

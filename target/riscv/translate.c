@@ -1197,9 +1197,11 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #include "decode-XAndesV5Ops.c.inc"
 #include "decode-XAndesCodenseOps.c.inc"
 #include "decode-XAndesAce.c.inc"
+#include "decode-XAndesVMM.c.inc"
 #include "insn_trans/trans_xandesv5ops.c.inc"
 #include "insn_trans/trans_xandescodenseops.c.inc"
 #include "insn_trans/trans_xandesace.c.inc"
+#include "insn_trans/trans_xandesvmm.c.inc"
 
 /* The specification allows for longer insns, but not supported by qemu. */
 #define MAX_INSN_LEN  4
@@ -1216,6 +1218,7 @@ const RISCVDecoder decoder_table[] = {
     { has_XVentanaCondOps_p, decode_XVentanaCodeOps},
     { has_XAndesV5Ops_p,  decode_XAndesV5Ops },
     { has_XAndesAce_p,  decode_XAndesAce },
+    { has_XAndesVMM_p,  decode_XAndesVMM },
 };
 
 const RISCVDecoder16 decoder16_table[] = {

@@ -176,6 +176,7 @@ struct RISCVCPUConfig {
     bool ext_XAndesAce;
     bool ext_XAndesAceMulti;
     bool ext_XAndesCodenseOps;
+    bool ext_XAndesVMM;
 
     uint32_t pmu_mask;
     char *priv_spec;
@@ -252,6 +253,7 @@ MATERIALISE_EXT_PREDICATE(XVentanaCondOps)
 MATERIALISE_EXT_PREDICATE(XAndesV5Ops);
 MATERIALISE_EXT_PREDICATE(XAndesAce);
 MATERIALISE_EXT_PREDICATE(XAndesCodenseOps);
+MATERIALISE_EXT_PREDICATE(XAndesVMM);
 MATERIALISE_EXT_PREDICATE(psfoperand);
 
 #endif

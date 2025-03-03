@@ -239,6 +239,7 @@ const RISCVIsaExtData isa_edata_arr[] = {
     ISA_EXT_DATA_ENTRY(xandescodenseops, PRIV_VERSION_1_12_0, ext_XAndesCodenseOps),
     ISA_EXT_DATA_ENTRY(xandesace, PRIV_VERSION_1_12_0, ext_XAndesAce),
     ISA_EXT_DATA_ENTRY(xandesacemulti, PRIV_VERSION_1_12_0, ext_XAndesAceMulti),
+    ISA_EXT_DATA_ENTRY(xandesvmm, PRIV_VERSION_1_12_0, ext_XAndesVMM),
 
     DEFINE_PROP_END_OF_LIST(),
 };
@@ -694,6 +695,15 @@ static void andes_cpu_lm_realize(DeviceState *dev)
                                         env->mask_dlm, 1);
         }
     }
+}
+
+static void andes_vmm_realize(RISCVCPU *cpu)
+{
+    cpu->env.amm_default_active_m = 2;
+    cpu->env.amm_default_active_k = 8;
+    cpu->env.amm_default_active_n = cpu->cfg.vlenb / 8;
+    /* Write 0 to reset uzobctl to the default value */
+    andes_csr_ops[CSR_UZOBCTL].write(&cpu->env, CSR_UZOBCTL, 0);
 }
 #endif
 
@@ -2675,6 +2685,10 @@ static void riscv_cpu_realize(DeviceState *dev, Error **errp)
     if (env->cpu_as_root) {
         andes_cpu_lm_realize(dev);
     }
+
+    if (cpu->cfg.ext_XAndesVMM) {
+        andes_vmm_realize(cpu);
+    }
 #endif
 
 #ifndef CONFIG_USER_ONLY
@@ -3109,6 +3123,7 @@ const RISCVCPUMultiExtConfig riscv_cpu_vendor_exts[] = {
     MULTI_EXT_CFG_BOOL("xandescodenseops", ext_XAndesCodenseOps, false),
     MULTI_EXT_CFG_BOOL("xandesace", ext_XAndesAce, false),
     MULTI_EXT_CFG_BOOL("xandesacemulti", ext_XAndesAceMulti, false),
+    MULTI_EXT_CFG_BOOL("xandesvmm", ext_XAndesVMM, false),
 
     DEFINE_PROP_END_OF_LIST(),
 };

@@ -119,6 +119,7 @@
 /* User mode control registers */
 #define CSR_UITB                0x800
 #define CSR_UCODE               0x801
+#define CSR_UZOBCTL             0x808
 #define CSR_UDCAUSE             0x809
 #define CSR_UCCTLBEGINADDR      0x80b
 #define CSR_UCCTLCOMMAND        0x80c
@@ -147,4 +148,3 @@
 #define ANDES_CPUID_NX25        (ANDES_CPUID_MSB_64 | 0x8025)
 #define ANDES_CPUID_NX27V       (ANDES_CPUID_MSB_64 | 0x8027)
 #define ANDES_CPUID_NX45        (ANDES_CPUID_MSB_64 | 0x8045)
-

@@ -250,6 +250,10 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define MASK_MMSC_CFG3_PL2C                 (0x1 << 5)
 #define MASK_MMSC_CFG3_PL2_CMD              (0x1 << 6)
 #define MASK_MMSC_CFG3_CST_CTL              (0x1 << 7)
+#define MASK_MMSC_CFG3_SHADOW               (0x1 << 8)
+#define MASK_MMSC_CFG3_ROC                  (0x1 << 9)
+#define MASK_MMSC_CFG3_AMM                  (0x1 << 10)
+#define MASK_MMSC_CFG3_ECC_DETECTION_ONLY   (0x1 << 12)
 #define MASK_MMSC_CFG3_IC_ECC_GRAN          (0x7 << 13)
 #define MASK_MMSC_CFG3_ILM_ECC_GRAN         (0x7 << 16)
 #define MASK_MMSC_CFG3_DC_ECC_GRAN          (0x7 << 19)
@@ -401,6 +405,11 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define V5_UMISC_CTL_FP_MODE_FP16           0
 #define V5_UMISC_CTL_FP_MODE_BF16           1
 
+/* uzobctl */
+#define MASK_UZOBCTL_ACTIVE_K               (0xFF)
+#define MASK_UZOBCTL_ACTIVE_N               (0xFF << 8)
+#define MASK_UZOBCTL_ACTIVE_M               (0xFF << 16)
+
 /* mvec_cfg */
 #define MASK_MVEC_CFG_MINOR                 (0xF)
 #define MASK_MVEC_CFG_MAJOR                 (0xF << 4)
@@ -456,6 +465,7 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define WRITE_MASK_CSR_MFIOB_32             0xFFFFFC3F
 #define WRITE_MASK_CSR_MFIOB_64             0xFFFFFFFFFFFFFC3F
 #define WRITE_MASK_CSR_UCODE                0x1
+#define WRITE_MASK_CSR_UZOBCTL              0xFFFFFF
 #define WRITE_MASK_CSR_MVEC_CFG             0x3FFFF
 #define WRITE_MASK_CSR_MXSTATUS             0x3FF
 #define WRITE_MASK_CSR_SMDCAUSE             0x7F
