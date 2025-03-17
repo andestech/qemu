@@ -304,8 +304,6 @@ void HELPER(andes_vle8_mk)(void *vd, target_ulong rs1, target_ulong rs2,
     uint32_t active_M = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_M);
     uint32_t active_K = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_K);
 
-    VSTART_CHECK_EARLY_EXIT(env);
-
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
         uint32_t m = (i % velements) / K;
@@ -340,8 +338,6 @@ void HELPER(andes_vle8_nk)(void *vd, target_ulong rs1, target_ulong rs2,
     target_ulong uzobctl = env->andes_csr.csrno[CSR_UZOBCTL];
     uint32_t active_N = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_N);
     uint32_t active_K = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_K);
-
-    VSTART_CHECK_EARLY_EXIT(env);
 
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
@@ -378,8 +374,6 @@ void HELPER(andes_vle8_kn)(void *vd, target_ulong rs1, target_ulong rs2,
     uint32_t active_N = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_N);
     uint32_t active_K = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_K);
 
-    VSTART_CHECK_EARLY_EXIT(env);
-
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
         uint32_t n = (i % velements) / K;
@@ -414,8 +408,6 @@ void HELPER(andes_vle32_mn)(void *vd, target_ulong rs1, target_ulong rs2,
     target_ulong uzobctl = env->andes_csr.csrno[CSR_UZOBCTL];
     uint32_t active_M = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_M);
     uint32_t active_N = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_N);
-
-    VSTART_CHECK_EARLY_EXIT(env);
 
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
@@ -452,8 +444,6 @@ void HELPER(andes_vse8_nk)(void *vs, target_ulong rs1, target_ulong rs2,
     uint32_t active_N = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_N);
     uint32_t active_K = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_K);
 
-    VSTART_CHECK_EARLY_EXIT(env);
-
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
         uint32_t n = (i % velements) / K;
@@ -488,8 +478,6 @@ void HELPER(andes_vse8_kn)(void *vs, target_ulong rs1, target_ulong rs2,
     target_ulong uzobctl = env->andes_csr.csrno[CSR_UZOBCTL];
     uint32_t active_N = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_N);
     uint32_t active_K = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_K);
-
-    VSTART_CHECK_EARLY_EXIT(env);
 
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
@@ -526,8 +514,6 @@ void HELPER(andes_vse32_nm)(void *vs, target_ulong rs1, target_ulong rs2,
     uint32_t active_M = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_M);
     uint32_t active_N = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_N);
 
-    VSTART_CHECK_EARLY_EXIT(env);
-
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
         uint32_t m = (i % velements) / N;
@@ -562,8 +548,6 @@ void HELPER(andes_vse32_mn)(void *vs, target_ulong rs1, target_ulong rs2,
     target_ulong uzobctl = env->andes_csr.csrno[CSR_UZOBCTL];
     uint32_t active_M = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_M);
     uint32_t active_N = get_field(uzobctl, MASK_UZOBCTL_ACTIVE_N);
-
-    VSTART_CHECK_EARLY_EXIT(env);
 
     for (target_ulong i = env->vstart; i < LMUL * velements; i++) {
         uint32_t g = i / velements;
