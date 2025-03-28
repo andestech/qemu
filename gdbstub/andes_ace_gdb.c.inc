@@ -8,13 +8,19 @@
 #define _ANDES_ACE_GDB_
 #include "gdbstub/andes_ace_gdb.h"
 
+__attribute__((weak)) int32_t qemu_ace_get_filename_for_gdb(CPUState *, char *)
+{
+    return -1;
+}
+
 int gdb_handle_query_rcmd_andes_query(GArray *params, void *user_ctx)
 {
     /* nds query target only can be 'SID' or 'OCD' */
     if (!g_strcmp0((const char *)gdbserver_state.mem_buf->data,
         NDS_QUERY_TARGET_CMD)) {
         gdb_memtohex(gdbserver_state.str_buf,
-                     (guint8 *)NDS_QUERY_TARGET_RES, strlen(NDS_QUERY_TARGET_RES));
+                     (guint8 *)NDS_QUERY_TARGET_RES,
+                     strlen(NDS_QUERY_TARGET_RES));
         gdb_put_strbuf();
         return 0;
     }
@@ -22,7 +28,8 @@ int gdb_handle_query_rcmd_andes_query(GArray *params, void *user_ctx)
     if (!g_strcmp0((const char *)gdbserver_state.mem_buf->data,
         NDS_QUERY_ENDIAN_CMD)) {
         gdb_memtohex(gdbserver_state.str_buf,
-                     (guint8 *)NDS_QUERY_ENDIAN_RES, strlen(NDS_QUERY_ENDIAN_RES));
+                     (guint8 *)NDS_QUERY_ENDIAN_RES,
+                     strlen(NDS_QUERY_ENDIAN_RES));
         gdb_put_strbuf();
         return 0;
     }
@@ -30,7 +37,8 @@ int gdb_handle_query_rcmd_andes_query(GArray *params, void *user_ctx)
     if (!g_strcmp0((const char *)gdbserver_state.mem_buf->data,
         NDS_QUERY_CPUID_CMD)) {
         gdb_memtohex(gdbserver_state.str_buf,
-                     (guint8 *)NDS_QUERY_CPUID_RES, strlen(NDS_QUERY_CPUID_RES));
+                     (guint8 *)NDS_QUERY_CPUID_RES,
+                     strlen(NDS_QUERY_CPUID_RES));
         gdb_put_strbuf();
         return 0;
     }

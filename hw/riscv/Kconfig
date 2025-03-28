@@ -11,6 +11,7 @@ config IBEX
 config ANDES_AE350
     bool
     default y
+    depends on RISCV32 || RISCV64
     select ATCBMC200
     select ATCBMC300
     select ANDES_PLIC
