@@ -1354,8 +1354,15 @@ static void andes_ae350_machine_init(MachineState *machine)
     /* HVM */
     memory_region_init_ram(mask_hvm, NULL, "riscv.andes.ae350.hvm",
                            1 << bs->soc.hvm_size_pow_2, &error_fatal);
-    memory_region_add_subregion(system_memory, bs->soc.hvm_base,
-                                mask_hvm);
+    memory_region_add_subregion(system_memory, bs->soc.hvm_base, mask_hvm);
+
+    /* HVM subport */
+    MemoryRegion *mask_hvm_subport = g_new(MemoryRegion, 1);
+    memory_region_init_alias(mask_hvm_subport, NULL,
+                             "riscv.andes.ae350.hvm_subport",
+                             mask_hvm, 0, 1 << bs->soc.hvm_size_pow_2);
+    memory_region_add_subregion(system_memory, bs->soc.hvm_subport_base,
+                                mask_hvm_subport);
 
     /* L2C */
     memory_region_init_ram(mask_l2c, NULL, "riscv.andes.ae350.l2c",
@@ -1536,6 +1543,8 @@ static Property andes_ae350_soc_property[] = {
                        ANDES_HVM_BASE_DEFAULT),
     DEFINE_PROP_UINT64("hvm_size_pow_2", AndesAe350SocState, hvm_size_pow_2,
                        ANDES_HVM_SIZE_POW_2_DEFAULT),
+    DEFINE_PROP_UINT64("hvm_subport_base", AndesAe350SocState, hvm_subport_base,
+                       ANDES_HVM_SUBPORT_BASE_DEFAULT),
     DEFINE_PROP_STRING("secure_platform", AndesAe350SocState, secure_platform),
     DEFINE_PROP_END_OF_LIST(),
 };

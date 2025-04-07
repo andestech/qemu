@@ -80,6 +80,7 @@ typedef struct AndesAe350SocState {
 
     uint64_t hvm_base;
     uint64_t hvm_size_pow_2;
+    uint64_t hvm_subport_base;
 
     DeviceState *iopmp_dev[AE350_GENERIC_IOPMP_MAX_NUM];
     Iopmp_Dispatcher_State iopmp_dispatcher;
@@ -228,6 +229,7 @@ enum {
 /* HVM defalut configs */
 #define ANDES_HVM_BASE_DEFAULT       0x90000000
 #define ANDES_HVM_SIZE_POW_2_DEFAULT 0x0
+#define ANDES_HVM_SUBPORT_BASE_DEFAULT      ANDES_HVM_BASE_DEFAULT
 
 /* AIA/APLIC address map offset */
 #define ANDES_AE350_APLIC_DOMAIN_NUM        1 /* this can be config by hw */
