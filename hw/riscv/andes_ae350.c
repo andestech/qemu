@@ -123,6 +123,7 @@ static const struct MemmapEntry {
     [ANDES_AE350_IOPMP_DLMAP]       = { 0xf101c000,       0x4000 },
     [ANDES_AE350_IOPMP100]          = { 0xf1024000,       0x4000 },
     [ANDES_AE350_UART3]             = { 0xf1100000,     0x100000 },
+    [ANDES_AE350_DTROM]             = { 0xf2000000,     0x100000 },
     [ANDES_AE350_VIRTIO]            = { 0xfe000000,       0x1000 },
     [ANDES_AE350_UNCACHEABLE_ALIAS] = { 0x100000000, 0x100000000 },
 };
@@ -1322,9 +1323,9 @@ static void andes_ae350_machine_init(MachineState *machine)
     MemoryRegion *mask_nor = g_new(MemoryRegion, 1);
     MemoryRegion *mask_hvm = g_new(MemoryRegion, 1);
     MemoryRegion *mask_l2c = g_new(MemoryRegion, 1);
+    MemoryRegion *mask_drom = g_new(MemoryRegion, 1);
     target_ulong start_addr = memmap[ANDES_AE350_DRAM].base;
     target_ulong firmware_end_addr, kernel_start_addr;
-    uint32_t fdt_load_addr;
     uint64_t kernel_entry;
 
     /* Initialize SoC */
@@ -1421,17 +1422,18 @@ static void andes_ae350_machine_init(MachineState *machine)
         kernel_entry = 0;
     }
 
-    /* Compute the fdt load address in dram */
-    fdt_load_addr = riscv_compute_fdt_addr(memmap[ANDES_AE350_DRAM].base,
-                                           memmap[ANDES_AE350_DRAM].size,
-                                           machine);
-    riscv_load_fdt(fdt_load_addr, machine->fdt);
+    /* dtb rom */
+    memory_region_init_rom(mask_drom, NULL, "riscv.andes.ae350.dtrom",
+                           memmap[ANDES_AE350_DTROM].size, &error_fatal);
+    memory_region_add_subregion(system_memory, memmap[ANDES_AE350_DTROM].base,
+                                mask_drom);
+    riscv_load_fdt(memmap[ANDES_AE350_DTROM].base, machine->fdt);
 
     /* load the reset vector */
     riscv_setup_rom_reset_vec(machine, &bs->soc.cpus, start_addr,
-                andes_ae350_memmap[ANDES_AE350_MROM].base,
-                andes_ae350_memmap[ANDES_AE350_MROM].size,
-                kernel_entry, fdt_load_addr);
+                              memmap[ANDES_AE350_MROM].base,
+                              memmap[ANDES_AE350_MROM].size,
+                              kernel_entry, memmap[ANDES_AE350_DTROM].base);
 
     if (bs->soc.has_iopmp100) {
         iopmp100_setup_system_memory_range(bs->soc.iopmp100_dev,
