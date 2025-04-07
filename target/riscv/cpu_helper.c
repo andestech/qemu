@@ -1972,12 +1972,11 @@ static target_ulong promote_load_fault(target_ulong orig_cause)
     return orig_cause;
 }
 
-static bool riscv_cpu_andes_check_lideleg(RISCVCPU *cpu)
+static bool riscv_cpu_andes_check_slideleg(RISCVCPU *cpu, target_long intno)
 {
     CPURISCVState *env = &cpu->env;
 
-    target_ulong slip = env->andes_csr.csrno[CSR_SLIP];
-    if (slip & MIP_ANDES_PMOVI) {
+    if (intno == IRQ_ANDES_PMOVI_S) {
         target_ulong mslideleg = env->andes_csr.csrno[CSR_MSLIDELEG];
         if (mslideleg & MIP_ANDES_PMOVI) {
             return true;
@@ -2013,7 +2012,7 @@ void riscv_cpu_do_interrupt(CPUState *cs)
         !(env->mip & (1ULL << cause));
     bool vs_injected = env->hvip & (1ULL << cause) & env->hvien &&
         !(env->mip & (1ULL << cause));
-    bool andes_lideleg = riscv_cpu_andes_check_lideleg(cpu);
+    bool andes_slideleg = riscv_cpu_andes_check_slideleg(cpu, cause);
     target_ulong tval = 0;
     target_ulong tinst = 0;
     target_ulong htval = 0;
@@ -2121,8 +2120,10 @@ void riscv_cpu_do_interrupt(CPUState *cs)
                   __func__, env->mhartid, async, cause, env->pc, tval,
                   riscv_cpu_get_trap_name(cause, async));
 
-    if (env->priv <= PRV_S && cause < 64 && (((deleg >> cause) & 1) ||
-        s_injected || vs_injected || andes_lideleg)) {
+    /* if Andes PMNDS is enable, related S-mode interrupts have an offset 256. */
+    if (env->priv <= PRV_S &&
+        (cause < 64 || (cause > 256 && (cause - 256) < 64)) &&
+        (((deleg >> cause) & 1) || s_injected || vs_injected || andes_slideleg)) {
         /* handle the trap in S-mode */
         /* save elp status */
         if (cpu_get_fcfien(env)) {

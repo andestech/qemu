@@ -133,7 +133,11 @@ static void riscv_pmu_handle_andes_pmovi_interrupt(CPURISCVState *env,
         uint32_t mcountermask_m = env->andes_csr.csrno[CSR_MCOUNTERMASK_M];
         if (mcountermask_m & ctr_mask) {
             /* invoke s-mode interrupt if enabled*/
-            uint32_t scounterinten = env->andes_csr.csrno[CSR_SCOUNTERINTEN];
+            target_ulong scounterinten;
+            assert(csr_ops[CSR_SCOUNTERINTEN].read(env, CSR_SCOUNTERINTEN,
+                                                   &scounterinten) ==
+                   RISCV_EXCP_NONE);
+
             if (scounterinten & ctr_mask) {
                 env->andes_csr.csrno[CSR_SLIP] |= MASK_LOCAL_IRQ_PMOVI;
                 env->andes_csr.csrno[CSR_SDCAUSE] = 0;
