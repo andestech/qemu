@@ -68,7 +68,12 @@ int32_t qemu_ace_agent_register(CPURISCVState *env, const char *extlibpath,
         (void **)&ace_agent_version) != 0) {
         return -1;
     }
-    if (ace_agent_version(env) != ACE_AGENT_VERSION) {
+    /*
+     * The QEMU ACE Agent version can be higher than the internal QEMU agent
+     * version, as newer versions of the ACE Agent support additional features
+     * that may not be required by the internal QEMU implementation
+     */
+    if (ace_agent_version(env) < ACE_AGENT_VERSION) {
         qemu_printf("QEMU and ACE agent version don't match\n");
         qemu_printf("QEMU ACE version=%d, ACE Agent version=%d\n",
                     ACE_AGENT_VERSION, ace_agent_version(env));
