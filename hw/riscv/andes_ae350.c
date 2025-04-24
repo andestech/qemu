@@ -1221,6 +1221,7 @@ static int andes_load_elf(MachineState *machine,
         load_elf_hdr(firmware_filename, &elf_header, &elf_is64, &err);
 
         if (err) {
+            error_report("could not load firmware '%s', only support ELF format", firmware_filename);
             error_free(err);
             exit(1);
         }
