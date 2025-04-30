@@ -103,6 +103,7 @@ typedef struct AndesAe350BoardState {
     int fdt_size;
     AndesAe350AIAType aia_type;
     int aia_guests;
+    bool load_default_mrom;
 } AndesAe350BoardState;
 
 enum {

@@ -742,6 +742,20 @@ static DeviceState *andes_ae350_create_aia(AndesAe350AIAType aia_type,
     return kvm_enabled() ? aplic_ss[0] : aplic_ms[0];
 }
 
+static bool andes_ae350_get_load_default_mrom(Object *obj, Error **errp)
+{
+    AndesAe350BoardState *s = ANDES_AE350_MACHINE(obj);
+
+    return s->load_default_mrom;
+}
+
+static void andes_ae350_set_load_default_mrom(Object *obj, bool val, Error **errp)
+{
+    AndesAe350BoardState *s = ANDES_AE350_MACHINE(obj);
+
+    s->load_default_mrom = val;
+}
+
 static char *andes_ae350_get_aia_guests(Object *obj, Error **errp)
 {
     AndesAe350BoardState *s = ANDES_AE350_MACHINE(obj);
@@ -1431,10 +1445,12 @@ static void andes_ae350_machine_init(MachineState *machine)
     riscv_load_fdt(memmap[ANDES_AE350_DTROM].base, machine->fdt, true);
 
     /* load the reset vector */
-    riscv_setup_rom_reset_vec(machine, &bs->soc.cpus, start_addr,
-                              memmap[ANDES_AE350_MROM].base,
-                              memmap[ANDES_AE350_MROM].size,
-                              kernel_entry, memmap[ANDES_AE350_DTROM].base);
+    if (bs->load_default_mrom) {
+        riscv_setup_rom_reset_vec(machine, &bs->soc.cpus, start_addr,
+                                memmap[ANDES_AE350_MROM].base,
+                                memmap[ANDES_AE350_MROM].size,
+                                kernel_entry, memmap[ANDES_AE350_DTROM].base);
+    }
 
     if (bs->soc.has_iopmp100) {
         iopmp100_setup_system_memory_range(bs->soc.iopmp100_dev,
@@ -1500,13 +1516,22 @@ static void andes_ae350_machine_class_init(ObjectClass *oc, void *data)
         object_class_property_set_description(oc, "aia-guests", str);
     }
 
+    object_class_property_add_bool(oc, "load-default-mrom",
+                                   andes_ae350_get_load_default_mrom,
+                                   andes_ae350_set_load_default_mrom);
+    object_class_property_set_description(oc, "load-default-mrom",
+                                          "If true, QEMU will load related "
+                                          "boot code and fw_dynamic_info to "
+                                          "the MROM region(0x8000_0000).");
+
     nc->nmi_monitor_handler = ae350_nmi;
 
 }
 
 static void andes_ae350_machine_instance_init(Object *obj)
 {
-
+    AndesAe350BoardState *bs = ANDES_AE350_MACHINE(obj);
+    bs->load_default_mrom = true;
 }
 
 static const TypeInfo andes_ae350_machine_typeinfo = {
