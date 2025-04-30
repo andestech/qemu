@@ -1324,7 +1324,7 @@ static void andes_ae350_machine_init(MachineState *machine)
     MemoryRegion *mask_nor = g_new(MemoryRegion, 1);
     MemoryRegion *mask_hvm = g_new(MemoryRegion, 1);
     MemoryRegion *mask_l2c = g_new(MemoryRegion, 1);
-    MemoryRegion *mask_drom = g_new(MemoryRegion, 1);
+    MemoryRegion *mask_dtrom = g_new(MemoryRegion, 1);
     target_ulong start_addr = memmap[ANDES_AE350_DRAM].base;
     target_ulong firmware_end_addr, kernel_start_addr;
     uint64_t kernel_entry;
@@ -1424,11 +1424,11 @@ static void andes_ae350_machine_init(MachineState *machine)
     }
 
     /* dtb rom */
-    memory_region_init_rom(mask_drom, NULL, "riscv.andes.ae350.dtrom",
+    memory_region_init_rom(mask_dtrom, NULL, "riscv.andes.ae350.dtrom",
                            memmap[ANDES_AE350_DTROM].size, &error_fatal);
     memory_region_add_subregion(system_memory, memmap[ANDES_AE350_DTROM].base,
-                                mask_drom);
-    riscv_load_fdt(memmap[ANDES_AE350_DTROM].base, machine->fdt);
+                                mask_dtrom);
+    riscv_load_fdt(memmap[ANDES_AE350_DTROM].base, machine->fdt, true);
 
     /* load the reset vector */
     riscv_setup_rom_reset_vec(machine, &bs->soc.cpus, start_addr,

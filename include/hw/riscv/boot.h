@@ -50,7 +50,7 @@ target_ulong riscv_load_kernel(MachineState *machine,
                                symbol_fn_t sym_cb);
 uint64_t riscv_compute_fdt_addr(hwaddr dram_start, uint64_t dram_size,
                                 MachineState *ms);
-void riscv_load_fdt(hwaddr fdt_addr, void *fdt);
+void riscv_load_fdt(hwaddr fdt_addr, void *fdt, bool is_load_to_rom);
 void riscv_setup_rom_reset_vec(MachineState *machine, RISCVHartArrayState *harts,
                                hwaddr saddr,
                                hwaddr rom_base, hwaddr rom_size,

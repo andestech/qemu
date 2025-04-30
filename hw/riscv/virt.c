@@ -1425,7 +1425,7 @@ static void virt_machine_done(Notifier *notifier, void *data)
     fdt_load_addr = riscv_compute_fdt_addr(memmap[VIRT_DRAM].base,
                                            memmap[VIRT_DRAM].size,
                                            machine);
-    riscv_load_fdt(fdt_load_addr, machine->fdt);
+    riscv_load_fdt(fdt_load_addr, machine->fdt, false);
 
     /* load the reset vector */
     riscv_setup_rom_reset_vec(machine, &s->soc[0], start_addr,

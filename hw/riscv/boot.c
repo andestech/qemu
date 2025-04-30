@@ -330,7 +330,7 @@ uint64_t riscv_compute_fdt_addr(hwaddr dram_base, hwaddr dram_size,
  * 'fdt_addr' is received as hwaddr because boards might put
  * the FDT beyond 32-bit addressing boundary.
  */
-void riscv_load_fdt(hwaddr fdt_addr, void *fdt)
+void riscv_load_fdt(hwaddr fdt_addr, void *fdt, bool is_load_to_rom)
 {
     uint32_t fdtsize = fdt_totalsize(fdt);
 
@@ -339,8 +339,20 @@ void riscv_load_fdt(hwaddr fdt_addr, void *fdt)
 
     rom_add_blob_fixed_as("fdt", fdt, fdtsize, fdt_addr,
                           &address_space_memory);
-    qemu_register_reset_nosnapshotload(qemu_fdt_randomize_seeds,
-                        rom_ptr_for_as(&address_space_memory, fdt_addr, fdtsize));
+
+    /*
+     * If the FDT is write to a read-only memory region(ROM), the data of
+     * ROM blob will be freed because we only need to write the FDT to the
+     * read-only memory region once(see function rom_reset()).
+     * To avoid a segmentation fault caused by the registered function
+     * qemu_fdt_randomize_seeds() when resetting, and since we actually cannot
+     * randomize seeds of the FDT in the ROM, so we do not register this
+     * function if the FDT is loaded to the ROM.
+     */
+     if (!is_load_to_rom) {
+        qemu_register_reset_nosnapshotload(qemu_fdt_randomize_seeds,
+                    rom_ptr_for_as(&address_space_memory, fdt_addr, fdtsize));
+     }
 }
 
 void riscv_rom_copy_firmware_info(MachineState *machine,
