@@ -974,7 +974,7 @@ static MemTxResult atciopmp200_handle_block(void *opaque, hwaddr addr,
     hwaddr start_addr, end_addr;
     iopmp_err_reqinfo_etype etype;
     iopmp_err_reqinfo_ttype ttype;
-    ttype = access_type;
+    ttype = (iopmp_err_reqinfo_ttype)access_type;
     int be;
     if (rrid > s->rrid_num) {
         etype = ERR_REQINFO_ETYPE_RRID;
@@ -1000,7 +1000,7 @@ static MemTxResult atciopmp200_handle_block(void *opaque, hwaddr addr,
     result = match_entry(s, rrid, start_addr, end_addr, &entry_idx, NULL);
 
     if (result == IOPMP_ENTRY_HIT) {
-        etype = access_type;
+        etype = (iopmp_err_reqinfo_etype)access_type;
     } else if (result == IOPMP_ENTRY_PAR_HIT) {
         etype = ERR_REQINFO_ETYPE_PARHIT;
     } else {

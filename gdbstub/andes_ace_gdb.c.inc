@@ -8,7 +8,7 @@
 #define _ANDES_ACE_GDB_
 #include "gdbstub/andes_ace_gdb.h"
 
-__attribute__((weak)) int32_t qemu_ace_get_filename_for_gdb(CPUState *, char *)
+__attribute__((weak)) int32_t qemu_ace_get_filename_for_gdb(CPUState *x, char *y)
 {
     return -1;
 }

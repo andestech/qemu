@@ -173,19 +173,6 @@ static void iopmp_iommu_notify(Atciopmp300state *s)
     }
 }
 
-static inline int get_transaction_type(IOMMUAccessFlags flags)
-{
-    if (flags == IOMMU_RO) {
-        return ERR_REQINFO_TYPE_READ;
-    }
-    if (flags == IOMMU_WO) {
-        return ERR_REQINFO_TYPE_WRITE;
-    }
-    qemu_log_mask(LOG_GUEST_ERROR, "%s: Unsupported IOMMUAccessFlags %d\n",
-                  __func__, (int)flags);
-    g_assert_not_reached();
-}
-
 static void iopmp_decode_napot(uint64_t a, uint64_t *sa,
                                uint64_t *ea)
 {
