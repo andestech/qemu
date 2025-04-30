@@ -21,7 +21,6 @@
 #ifndef HW_ANDES_PLIC_H
 #define HW_ANDES_PLIC_H
 
-#include "hw/intc/riscv_plic.h"
 #include "hw/sysbus.h"
 #include "qom/object.h"
 
@@ -29,49 +28,48 @@
 #define ANDES_PLIC_HART_CONFIG      "MS"
 #define ANDES_PLIC_NUM_SOURCES      128
 #define ANDES_PLIC_NUM_PRIORITIES   32
-#define ANDES_PLIC_PRIORITY_BASE    0x04
+#define ANDES_PLIC_PRIORITY_BASE    0x4
 #define ANDES_PLIC_PENDING_BASE     0x1000
 #define ANDES_PLIC_ENABLE_BASE      0x2000
 #define ANDES_PLIC_ENABLE_STRIDE    0x80
 #define ANDES_PLIC_THRESHOLD_BASE   0x200000
 #define ANDES_PLIC_THRESHOLD_STRIDE 0x1000
 
-#define ANDES_PLICSW_NAME           "ANDES_PLICSW"
-#define ANDES_PLICSW_HART_CONFIG    "M"
-#define ANDES_PLICSW_NUM_SOURCES    64
-#define ANDES_PLICSW_NUM_PRIORITIES 8
-#define ANDES_PLICSW_PRIORITY_BASE  0x4
-#define ANDES_PLICSW_PENDING_BASE   0x1000
-#define ANDES_PLICSW_ENABLE_BASE    0x2000
-#define ANDES_PLICSW_ENABLE_STRIDE  0x80
+#define ANDES_PLICSW_NAME             "ANDES_PLICSW"
+#define ANDES_PLICSW_HART_CONFIG      "M"
+#define ANDES_PLICSW_NUM_SOURCES      64
+#define ANDES_PLICSW_NUM_PRIORITIES   8
+#define ANDES_PLICSW_PRIORITY_BASE    0x4
+#define ANDES_PLICSW_PENDING_BASE     0x1000
+#define ANDES_PLICSW_ENABLE_BASE      0x2000
+#define ANDES_PLICSW_ENABLE_STRIDE    0x80
 #define ANDES_PLICSW_THRESHOLD_BASE   0x200000
 #define ANDES_PLICSW_THRESHOLD_STRIDE 0x1000
 
-#define TYPE_ANDES_PLIC "riscv.andes.plic"
 
-typedef struct AndesPLICClass AndesPLICClass;
-/* This is reusing the GICState typedef from TYPE_ARM_GIC_COMMON */
-#define ANDES_PLIC_GET_CLASS(obj) \
-    OBJECT_GET_CLASS(AndesPLICClass, (obj), TYPE_ANDES_PLIC)
-#define ANDES_PLIC_CLASS(klass) \
-    OBJECT_CLASS_CHECK(AndesPLICClass, (klass), TYPE_ANDES_PLIC)
-#define ANDES_PLIC(obj) \
-    OBJECT_CHECK(AndesPLICState, (obj), TYPE_ANDES_PLIC)
+#define TYPE_ANDES_PLIC "riscv.andes.plic"
+OBJECT_DECLARE_TYPE(AndesPLICState, AndesPLICClass, ANDES_PLIC)
 
 typedef struct AndesPLICClass {
-    RISCVPLICClass parent_class;
+    /*< private >*/
+    SysBusDeviceClass parent_class;
+    /*< public >*/
     DeviceRealize parent_realize;
     ResettablePhases parent_phases;
 } AndesPLICClass;
 
-typedef struct AndesPLICState AndesPLICState;
-
 typedef enum AndesPLICMode {
-    PlicMode_U,
-    PlicMode_S,
-    PlicMode_H,
-    PlicMode_M
+    PLICMode_U,
+    PLICMode_S,
+    PLICMode_H,
+    PLICMode_M
 } AndesPLICMode;
+
+typedef struct AndesPLICTarget {
+    uint32_t target_id;
+    uint32_t hart_id;
+    AndesPLICMode mode;
+} AndesPLICTarget;
 
 typedef enum AndesPLICTriggerType {
   ANDES_PLIC_TRIGGER_TYPE_LEVEL = 0,
@@ -90,39 +88,98 @@ enum feature_enable_register {
     FER_VECTORED = (1u << 1),
 };
 
-
-typedef struct AndesPLICAddr {
-    uint32_t target_id;
-    uint32_t hart_id;
-    AndesPLICMode mode;
-} AndesPLICAddr;
-
-typedef struct AndesPLICState {
+struct AndesPLICState {
     /*< private >*/
-    RISCVPLICState parent_obj;
+    SysBusDevice parent_obj;
 
     /*< public >*/
-    MemoryRegion parent_mmio;
-    char *plic_name;
-    uint32_t *level;
-    uint32_t *gw_state;
+    MemoryRegion mmio;
+    AndesPLICTarget *target_config;
+    uint32_t num_targets;
+    uint32_t num_harts;
 
-    /* registers */
-    uint32_t feature_enable;
+    /*
+     * number of words needed to record all source-related bits
+     * for example, we need 2 words to record 48 pending bits
+     */
+    uint32_t num_source_in_words;
+
+    /*
+     * number of words needed to record all priority bits
+     * for example, we need 2 words to record 48 priority bits
+     */
+    uint32_t num_priority_in_words;
+
+    /*
+     * number of words needed to record all enable bits of all targets
+     * we need (num_source_in_words * num_targets) words
+     */
+    uint32_t num_enable_in_words;
+
+    /*
+     * number of words needed to record all preemptive priority stack bits
+     * we need (num_priority_in_words * num_targets) words
+     */
+    uint32_t num_prio_stack_in_words;
+
+    /* source_priority[source_id], one word per source */
+    uint32_t *source_priority;
+
+    /* priority_threshold[target_id], one word per target */
+    uint32_t *priority_threshold;
+
+    /* pending[word_idx], one bit per source */
+    uint32_t *pending;
+
+    /* enable[target_id * num_source_in_words + word_idx], one bit per source */
+    uint32_t *enable;
+
+    /*
+     * priority_stack[target_id * num_priority_in_words + word_idx],
+     * one bit per priority
+     */
+    uint32_t *priority_stack;
+
+    /* trigger_type[word_idx], one bit per source */
     uint32_t *trigger_type;
+
+    uint32_t feature_enable;
     uint32_t num_irq_target;
 
-    /* interface */
-    void (*andes_plic_update)(void *plic);
-} AndesPLICState;
+    /* Internal claimed[source_id], one byte per source */
+    uint8_t *claimed;
 
-void andes_plichw_update(void *plic);
-void andes_plicsw_update(void *plic);
+    /*
+     * Internal level[source_id], one byte per source.
+     * Latched the latest signal level in the gateway
+     */
+    uint8_t *level;
 
-static inline bool addr_between(uint32_t addr, uint32_t base, uint32_t offset)
-{
-    return (addr >= base && addr < base + offset);
-}
+    /*
+     * Internal edge_latch_cnt[source_id], one byte per source.
+     * A counter to record latched raising edges.
+     */
+    uint8_t *edge_latch_cnt;
+
+    /* config */
+    char *plic_name;
+    char *hart_config;
+    uint32_t hart_id_base;
+    uint32_t num_sources;
+    uint32_t num_priorities;
+    uint32_t priority_base;
+    uint32_t pending_base;
+    uint32_t enable_base;
+    uint32_t enable_stride;
+    uint32_t threshold_base;
+    uint32_t threshold_stride;
+    uint32_t mmio_size;
+
+    qemu_irq *m_external_irqs;
+    qemu_irq *s_external_irqs;
+
+    void (*update)(void *opaque);
+};
 
 DeviceState *
 andes_plic_create(hwaddr addr,
@@ -132,6 +189,6 @@ andes_plic_create(hwaddr addr,
     uint32_t priority_base, uint32_t pending_base,
     uint32_t enable_base, uint32_t enable_stride,
     uint32_t threshold_base, uint32_t threshold_stride,
-    uint32_t aperture_size);
+    uint32_t mmio_size);
 
 #endif /* HW_ANDES_PLIC_H */

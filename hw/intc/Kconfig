@@ -110,9 +110,5 @@ config LOONGARCH_PCH_MSI
 config LOONGARCH_EXTIOI
     bool
 
-config RISCV_PLIC
-    bool
-
 config ANDES_PLIC
     bool
-    select RISCV_PLIC
