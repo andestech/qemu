@@ -376,7 +376,13 @@ static void atcdmac300_thread_run_channel(void *opaque, int ch)
 
 static void *atcdmac300_thread_run(void *opaque)
 {
+    ATCDMAC300State *s = opaque;
     while (1) {
+        qemu_mutex_lock(&s->thr_mutex);
+        while (!s->ChEN) {
+            qemu_cond_wait(&s->thr_cond, &s->thr_mutex);
+        }
+        qemu_mutex_unlock(&s->thr_mutex);
         for (int ch = 0; ch < ATCDMAC300_MAX_CHAN; ch++) {
             atcdmac300_thread_run_channel(opaque, ch);
         }
@@ -416,6 +422,7 @@ static void atcdmac300_write(void *opaque, hwaddr offset, uint64_t value,
         }
         break;
     case ATCDMAC300_CHAN_CTL:
+        qemu_mutex_lock(&s->thr_mutex);
         /* Also write alias register ChEN */
         if (value & (1 << CHAN_CTL_ENABLE)) {
             s->ChEN |= (1 << ch);
@@ -423,6 +430,11 @@ static void atcdmac300_write(void *opaque, hwaddr offset, uint64_t value,
             s->ChEN &= ~(1 << ch);
         }
         s->chan[ch].ChnCtrl = value;
+        /* Wakeup run thread */
+        if (s->ChEN) {
+            qemu_cond_signal(&s->thr_cond);
+        }
+        qemu_mutex_unlock(&s->thr_mutex);
         break;
     case ATCDMAC300_CHAN_TRAN_SZ:
         s->chan[ch].ChnTranSize = value;
@@ -469,6 +481,8 @@ static void atcdmac300_realize(DeviceState *dev, Error **errp)
     memory_region_init_io(&s->mmio, OBJECT(dev), &atcdmac300_ops, s,
                           TYPE_ATCDMAC300, s->mmio_size);
     sysbus_init_mmio(sbus, &s->mmio);
+    qemu_mutex_init(&s->thr_mutex);
+    qemu_cond_init(&s->thr_cond);
     qemu_thread_create(&s->thread, "atcdmac_thread", atcdmac300_thread_run,
                        s, QEMU_THREAD_JOINABLE);
 }

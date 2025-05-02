@@ -161,6 +161,8 @@ struct ATCDMAC300State {
     uint32_t inf_sid[2];
 
     QemuThread thread;
+    QemuMutex thr_mutex;
+    QemuCond thr_cond;
 };
 
 void atcdmac300_create(ATCDMAC300State *atcdmac, const char *name,
