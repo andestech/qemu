@@ -39,4 +39,6 @@ void riscv_pmu_update_fixed_ctrs(CPURISCVState *env, target_ulong newpriv,
 RISCVException riscv_pmu_read_ctr(CPURISCVState *env, target_ulong *val,
                                   bool upper_half, uint32_t ctr_idx);
 
+bool riscv_pmu_has_andes_pmnds(RISCVCPU *cpu);
+
 #endif /* RISCV_PMU_H */

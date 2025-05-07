@@ -1159,6 +1159,7 @@ static target_ulong riscv_pmu_ctr_get_fixed_counters_val(CPURISCVState *env,
                                                          int counter_idx,
                                                          bool upper_half)
 {
+    RISCVCPU *cpu = env_archcpu(env);
     int inst = riscv_pmu_ctr_monitor_instructions(env, counter_idx);
     uint64_t *counter_arr_virt = env->pmu_fixed_ctrs[inst].counter_virt;
     uint64_t *counter_arr = env->pmu_fixed_ctrs[inst].counter;
@@ -1166,17 +1167,30 @@ static target_ulong riscv_pmu_ctr_get_fixed_counters_val(CPURISCVState *env,
     uint64_t curr_val = 0;
     uint64_t cfg_val = 0;
 
-    if (counter_idx == 0) {
-        cfg_val = upper_half ? ((uint64_t)env->mcyclecfgh << 32) :
-                  env->mcyclecfg;
-    } else if (counter_idx == 2) {
-        cfg_val = upper_half ? ((uint64_t)env->minstretcfgh << 32) :
-                  env->minstretcfg;
+    if (!riscv_pmu_has_andes_pmnds(cpu)) {
+        if (counter_idx == 0) {
+            cfg_val = upper_half ? ((uint64_t)env->mcyclecfgh << 32) :
+                      env->mcyclecfg;
+        } else if (counter_idx == 2) {
+            cfg_val = upper_half ? ((uint64_t)env->minstretcfgh << 32) :
+                      env->minstretcfg;
+        } else {
+            cfg_val = upper_half ?
+                      ((uint64_t)env->mhpmeventh_val[counter_idx] << 32) :
+                      env->mhpmevent_val[counter_idx];
+            cfg_val &= MHPMEVENT_FILTER_MASK;
+        }
     } else {
-        cfg_val = upper_half ?
-                  ((uint64_t)env->mhpmeventh_val[counter_idx] << 32) :
-                  env->mhpmevent_val[counter_idx];
-        cfg_val &= MHPMEVENT_FILTER_MASK;
+        uint64_t ctr_mask = 1 << counter_idx;
+        if ((env->andes_csr.csrno[CSR_MCOUNTERMASK_M] & ctr_mask)) {
+            cfg_val |= MCYCLECFG_BIT_MINH;
+        }
+        if ((env->andes_csr.csrno[CSR_MCOUNTERMASK_S] & ctr_mask)) {
+            cfg_val |= MCYCLECFG_BIT_SINH;
+        }
+        if ((env->andes_csr.csrno[CSR_MCOUNTERMASK_U] & ctr_mask)) {
+            cfg_val |= MCYCLECFG_BIT_UINH;
+        }
     }
 
     if (!cfg_val) {

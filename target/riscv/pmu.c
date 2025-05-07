@@ -102,7 +102,7 @@ static bool riscv_pmu_counter_enabled(RISCVCPU *cpu, uint32_t ctr_idx)
     }
 }
 
-static bool riscv_pmu_has_andes_pmnds(RISCVCPU *cpu)
+bool riscv_pmu_has_andes_pmnds(RISCVCPU *cpu)
 {
     if (cpu->cfg.ext_XAndesV5Ops == false) {
         return false;
