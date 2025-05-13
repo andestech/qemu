@@ -836,6 +836,7 @@ int riscv_cpu_claim_interrupts(RISCVCPU *cpu, uint64_t interrupts)
 void riscv_cpu_interrupt(CPURISCVState *env)
 {
     uint64_t gein, vsgein = 0, vstip = 0, irqf = 0;
+    uint64_t slip = env->andes_csr.csrno[CSR_SLIP];
     CPUState *cs = env_cpu(env);
 
     BQL_LOCK_GUARD();
@@ -850,7 +851,7 @@ void riscv_cpu_interrupt(CPURISCVState *env)
 
     vstip = env->vstime_irq ? MIP_VSTIP : 0;
 
-    if (env->mip | vsgein | vstip | irqf) {
+    if (env->mip | vsgein | vstip | irqf | slip) {
         cpu_interrupt(cs, CPU_INTERRUPT_HARD);
     } else {
         cpu_reset_interrupt(cs, CPU_INTERRUPT_HARD);
