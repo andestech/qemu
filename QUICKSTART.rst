@@ -16,14 +16,24 @@ Clone the Andes QEMU repository:
     git clone https://github.com/andestech/qemu.git
 
 
-Build in Ubuntu
-===============
+Install the required dependencies
+=================================
 
-Install the required dependencies:
+For Ubuntu 22.04 or later:
 
 .. code-block:: bash
 
-    sudo apt-get install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev ninja-build
+    sudo apt-get install git python3-virtualenv libglib2.0-dev libfdt-dev ninja-build
+
+If your python version is 3.10 or earlier, please install tomli:
+
+.. code-block:: bash
+
+    pip3 install --user tomli
+
+
+Build in Ubuntu
+===============
 
 Navigate to the cloned qemu directory and create a build directory:
 
@@ -37,13 +47,13 @@ Configure the build options:
 
 .. code-block:: bash
 
-    ../configure --target-list=riscv64-softmmu,riscv32-softmmu --disable-werror --disable-pa --disable-alsa --disable-gtk --disable-curses --disable-sdl --disable-vnc --disable-opengl --disable-libusb
+    ../configure --target-list=riscv64-softmmu,riscv32-softmmu --without-default-features --enable-avx2 --enable-avx512bw --enable-vhost-net --enable-vhost-kernel --enable-vhost-user --enable-multiprocess --enable-slirp
 
 Build QEMU:
 
 .. code-block:: bash
 
-    make -j`nproc`
+    ninja
 
 | After successful building, you should have the binaries :code:`qemu-system-riscv64` and :code:`qemu-system-riscv32`.
 | For more detailed information about building, refer to the `QEMU on Linux hosts <https://wiki.qemu.org/Hosts/Linux>`_.
