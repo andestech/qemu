@@ -1506,6 +1506,8 @@ static void riscv_init_max_cpu_extensions(Object *obj)
 
     if (env->misa_mxl != MXL_RV32) {
         isa_ext_update_enabled(cpu, CPU_CFG_OFFSET(ext_zcf), false);
+        isa_ext_update_enabled(cpu, CPU_CFG_OFFSET(ext_zilsd), false);
+        isa_ext_update_enabled(cpu, CPU_CFG_OFFSET(ext_zclsd), false);
     }
 }
 
