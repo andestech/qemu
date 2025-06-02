@@ -2174,6 +2174,7 @@ static void andes_csr_reset_common(CPURISCVState *env)
     }
 #endif
 
+    env->andes_csr.csrno[CSR_MHSP_CTL] = 0;
     /* all-one reset value */
     env->andes_csr.csrno[CSR_MSP_BOUND] = ~((target_ulong)0);
     env->andes_csr.csrno[CSR_MSP_BASE] = ~((target_ulong)0);
