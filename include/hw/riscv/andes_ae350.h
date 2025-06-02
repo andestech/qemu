@@ -48,6 +48,8 @@
 
 #define ANDES_SECURE_PLATFORM_NONE "none"
 
+#define FLASH_OBJECT_PATH "/objects/flash-backend"
+
 typedef enum AndesAe350AIAType {
     ANDES_AE350_AIA_TYPE_NONE = 0,
     ANDES_AE350_AIA_TYPE_APLIC,

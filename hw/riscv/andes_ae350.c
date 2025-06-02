@@ -1334,7 +1334,6 @@ static void andes_ae350_machine_init(MachineState *machine)
     AndesAe350BoardState *bs = ANDES_AE350_MACHINE(machine);
     MemoryRegion *system_memory = get_system_memory();
     MemoryRegion *main_mem = g_new(MemoryRegion, 1);
-    MemoryRegion *mask_rom = g_new(MemoryRegion, 1);
     MemoryRegion *mask_nor = g_new(MemoryRegion, 1);
     MemoryRegion *mask_hvm = g_new(MemoryRegion, 1);
     MemoryRegion *mask_l2c = g_new(MemoryRegion, 1);
@@ -1413,10 +1412,29 @@ static void andes_ae350_machine_init(MachineState *machine)
     }
 
     /* boot rom */
-    memory_region_init_rom(mask_rom, NULL, "riscv.andes.ae350.mrom",
-                           memmap[ANDES_AE350_MROM].size, &error_fatal);
+    MemoryRegion *mrom_mr;
+    /*
+     * Try to resolve an external memory backend object for the boot ROM.
+     * If the user specified a backend via -object (e.g.,
+     * -object memory-backend-file,id=flash-backend,mem-path=boot.img,size=...),
+     * use it as the boot ROM. This enables preloaded flash content or
+     * persistent storage.
+     */
+    Object *backend_obj = object_resolve_path_type(FLASH_OBJECT_PATH,
+                                                   TYPE_MEMORY_BACKEND_FILE,
+                                                   NULL);
+    if (backend_obj) {
+        /* Use the user-provided flash backend as the boot ROM memory */
+        mrom_mr = host_memory_backend_get_memory(MEMORY_BACKEND(backend_obj));
+    } else {
+        /* No backend found, use default ROM region */
+        MemoryRegion *mask_rom = g_new(MemoryRegion, 1);
+        memory_region_init_rom(mask_rom, NULL, "riscv.andes.ae350.mrom",
+                               memmap[ANDES_AE350_MROM].size, &error_fatal);
+        mrom_mr = mask_rom;
+    }
     memory_region_add_subregion(system_memory, memmap[ANDES_AE350_MROM].base,
-                                mask_rom);
+                                mrom_mr);
 
     start_addr = andes_load_elf(machine, BIOS_FILENAME);
     firmware_end_addr =
