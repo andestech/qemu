@@ -1428,10 +1428,9 @@ static void andes_ae350_machine_init(MachineState *machine)
         mrom_mr = host_memory_backend_get_memory(MEMORY_BACKEND(backend_obj));
     } else {
         /* No backend found, use default ROM region */
-        MemoryRegion *mask_rom = g_new(MemoryRegion, 1);
-        memory_region_init_rom(mask_rom, NULL, "riscv.andes.ae350.mrom",
+        mrom_mr = g_new(MemoryRegion, 1);
+        memory_region_init_rom(mrom_mr, NULL, "riscv.andes.ae350.mrom",
                                memmap[ANDES_AE350_MROM].size, &error_fatal);
-        mrom_mr = mask_rom;
     }
     memory_region_add_subregion(system_memory, memmap[ANDES_AE350_MROM].base,
                                 mrom_mr);
