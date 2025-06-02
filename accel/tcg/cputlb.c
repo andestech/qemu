@@ -1070,7 +1070,7 @@ void tlb_set_page_full(CPUState *cpu, int mmu_idx,
     section = address_space_translate_for_iotlb(cpu, asidx, full->phys_addr,
                                                 &xlat, &sz, full->attrs, &prot);
     /* Update page size */
-    full->lg_page_size = ctz64(sz);
+    full->lg_page_size = MIN(full->lg_page_size, ctz64(sz));
     if (full->lg_page_size > TARGET_PAGE_BITS) {
         full->lg_page_size = TARGET_PAGE_BITS;
     } else {
