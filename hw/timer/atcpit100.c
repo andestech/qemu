@@ -95,7 +95,7 @@ enable_ptimer(ptimer_state *ptimer, uint64_t reload, uint32_t freq)
      */
     ptimer_transaction_begin(ptimer);
     ptimer_stop(ptimer);
-    ptimer_set_limit(ptimer, reload ? reload : -1u, 1);
+    ptimer_set_limit(ptimer, reload, 1);
     ptimer_set_freq(ptimer, freq);
     ptimer_run(ptimer, 0);
     ptimer_transaction_commit(ptimer);
@@ -522,7 +522,10 @@ atcpit100_init(Object *obj)
             Atcpit100Timer *tmr = &ch->timers[j];
             tmr->id = j;
             tmr->channel = ch;
-            tmr->ptimer = ptimer_init(timer_hit, tmr, PTIMER_POLICY_LEGACY);
+            tmr->ptimer = ptimer_init(timer_hit, tmr,
+                                      PTIMER_POLICY_WRAP_AFTER_ONE_PERIOD |
+                                      PTIMER_POLICY_NO_IMMEDIATE_TRIGGER |
+                                      PTIMER_POLICY_NO_IMMEDIATE_RELOAD);
             ptimer_transaction_begin(tmr->ptimer);
             ptimer_set_freq(tmr->ptimer, s->pclk);
             ptimer_transaction_commit(tmr->ptimer);
@@ -536,7 +539,7 @@ atcpit100_init(Object *obj)
 }
 
 static Property atcpit100_properties[] = {
-    DEFINE_PROP_UINT32("pclk", Atcpit100State, pclk, 40 * 1000 * 1000),
+    DEFINE_PROP_UINT32("pclk", Atcpit100State, pclk, 60 * 1000 * 1000),
     DEFINE_PROP_UINT32("extclk", Atcpit100State, extclk, 20 * 1000 * 1000),
     DEFINE_PROP_END_OF_LIST(),
 };
