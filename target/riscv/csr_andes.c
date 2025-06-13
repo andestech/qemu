@@ -75,16 +75,17 @@ static RISCVException mcfg4(CPURISCVState *env, int csrno)
     return RISCV_EXCP_ILLEGAL_INST;
 }
 
-static RISCVException amm(CPURISCVState *env, int csrno)
+static RISCVException v_amm(CPURISCVState *env, int csrno)
 {
     AndesCsr *csr = &env->andes_csr;
-    if (mcfg3(env, csrno) != RISCV_EXCP_NONE) {
-        return RISCV_EXCP_ILLEGAL_INST;
+    if (riscv_has_ext(env, RVV)) {
+        return RISCV_EXCP_NONE;
     }
-    if (get_field(csr->csrno[CSR_MMSC_CFG3], MASK_MMSC_CFG3_AMM) == 0) {
-        return RISCV_EXCP_ILLEGAL_INST;
+    if ((mcfg3(env, csrno) == RISCV_EXCP_NONE) &&
+        ((get_field(csr->csrno[CSR_MMSC_CFG3], MASK_MMSC_CFG3_AMM) == 1))) {
+        return RISCV_EXCP_NONE;
     }
-    return RISCV_EXCP_NONE;
+    return RISCV_EXCP_ILLEGAL_INST;
 }
 
 static RISCVException ecc(CPURISCVState *env, int csrno)
@@ -1513,7 +1514,7 @@ riscv_csr_operations andes_csr_ops[CSR_TABLE_SIZE] = {
     [CSR_UITB]           = { "uitb",              ecd,   read_csr, write_uitb },
     [CSR_UCODE]          = { "ucode",             edsp,  read_csr,
                                                          write_ucode          },
-    [CSR_UZOBCTL]        = { "uzobctl",           amm,   read_csr,
+    [CSR_UZOBCTL]        = { "uzobctl",           v_amm, read_csr,
                                                          write_uzobctl        },
     [CSR_UDCAUSE]        = { "udcause",           any,   read_csr, write_csr  },
     [CSR_UCCTLBEGINADDR] = { "ucctlbeginaddr",    ucctl, read_csr, write_csr  },
