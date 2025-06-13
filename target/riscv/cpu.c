@@ -2249,10 +2249,9 @@ static void andes_csr_sync_cpu_ext(CPURISCVState *env, RISCVCPU *cpu)
     env->andes_csr.csrno[CSR_MRVARCH_CFG] = mrvarch_cfg;
 
     if (riscv_cpu_mxl(env) == MXL_RV32) {
-        target_ulong mmsc_cfg2;
-        target_ulong mrvarch_cfg2;
         if (csr_ops[CSR_MMSC_CFG2].predicate(env, CSR_MMSC_CFG2) ==
                 RISCV_EXCP_NONE) {
+            target_ulong mmsc_cfg2;
             csr_ops[CSR_MMSC_CFG2].read(env, CSR_MMSC_CFG2, &mmsc_cfg2);
             mmsc_cfg2 = set_field(mmsc_cfg2,
                                   MASK_MMSC_CFG2_ZFH, cpu->cfg.ext_zfh);
@@ -2260,6 +2259,7 @@ static void andes_csr_sync_cpu_ext(CPURISCVState *env, RISCVCPU *cpu)
         }
         if (csr_ops[CSR_MRVARCH_CFG2].predicate(env, CSR_MRVARCH_CFG2) ==
                 RISCV_EXCP_NONE) {
+            target_ulong mrvarch_cfg2;
             csr_ops[CSR_MRVARCH_CFG2].read(env,
                                            CSR_MRVARCH_CFG2, &mrvarch_cfg2);
             mrvarch_cfg2 = set_field(mrvarch_cfg2, MASK_MRVARCH_CFG2_ZFBFMIN,
@@ -2370,6 +2370,33 @@ static void andes_csr_sync_cpu_ext(CPURISCVState *env, RISCVCPU *cpu)
         mrvarch_cfg = set_field(mrvarch_cfg, MASK_MRVARCH_CFG_ZVKT,
                                 cpu->cfg.ext_zvkt);
         env->andes_csr.csrno[CSR_MRVARCH_CFG] = mrvarch_cfg;
+    }
+    if (csr_ops[CSR_MRVARCH_CFG3].predicate(env, CSR_MRVARCH_CFG3) ==
+            RISCV_EXCP_NONE) {
+        target_ulong mrvarch_cfg3;
+        csr_ops[CSR_MRVARCH_CFG3].read(env,
+                                       CSR_MRVARCH_CFG3, &mrvarch_cfg3);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_SMAIA,
+                                 cpu->cfg.ext_smaia);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_SSAIA,
+                                 cpu->cfg.ext_ssaia);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_SSNPM,
+                                 cpu->cfg.ext_ssnpm);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_SMNPM,
+                                 cpu->cfg.ext_smnpm);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_SMMPM,
+                                 cpu->cfg.ext_smmpm);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_ZAWRS,
+                                 cpu->cfg.ext_zawrs);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_SMCSRIND,
+                                 cpu->cfg.ext_smcsrind);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_SSCSRIND,
+                                 cpu->cfg.ext_sscsrind);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_ZIMOP,
+                                 cpu->cfg.ext_zimop);
+        mrvarch_cfg3 = set_field(mrvarch_cfg3, MASK_MRVARCH_CFG3_ZCMOP,
+                                 cpu->cfg.ext_zcmop);
+        env->andes_csr.csrno[CSR_MRVARCH_CFG3] = mrvarch_cfg3;
     }
 }
 

@@ -1082,16 +1082,19 @@ static AndesCsrConfigInfo csr_mrvarch_cfg2_map[]  = {
 };
 
 static AndesCsrConfigInfo csr_mrvarch_cfg3_map[]  = {
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMAIA, "smaia"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSAIA, "ssaia"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SPMP, "spmp"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMRNMI, "smrnmi"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSNPM, "ssnpm"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMNPM, "smnpm"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMPM, "smpm"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_ZAWRS, "zawrs"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMCSRIND, "smcsrind"},
-    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSCSRIND, "sscsrind"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMAIA, "isa-smaia"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSAIA, "isa-ssaia"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SPMP, "isa-spmp"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMRNMI, "isa-smrnmi"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSNPM, "isa-ssnpm"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMNPM, "isa-smnpm"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMMPM, "isa-smmpm"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_ZAWRS, "isa-zawrs"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SMCSRIND, "isa-smcsrind"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_SSCSRIND, "isa-sscsrind"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_RERI, "isa-reri"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_ZIMOP, "isa-zimop"},
+    {CONFIG_BOOL,   MASK_MRVARCH_CFG3_ZCMOP, "isa-zcmop"},
 };
 
 static AndesCsrConfigInfo csr_mvec_cfg_map[]  = {

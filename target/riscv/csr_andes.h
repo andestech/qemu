@@ -393,10 +393,13 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define MASK_MRVARCH_CFG3_SMRNMI            (0x3 << 4)
 #define MASK_MRVARCH_CFG3_SSNPM             (0x1 << 6)
 #define MASK_MRVARCH_CFG3_SMNPM             (0x1 << 7)
-#define MASK_MRVARCH_CFG3_SMPM              (0x1 << 8)
+#define MASK_MRVARCH_CFG3_SMMPM             (0x1 << 8)
 #define MASK_MRVARCH_CFG3_ZAWRS             (0x1 << 9)
 #define MASK_MRVARCH_CFG3_SMCSRIND          (0x1 << 10)
 #define MASK_MRVARCH_CFG3_SSCSRIND          (0x1 << 11)
+#define MASK_MRVARCH_CFG3_RERI              (0x1 << 12)
+#define MASK_MRVARCH_CFG3_ZIMOP             (0x1 << 24)
+#define MASK_MRVARCH_CFG3_ZCMOP             (0x1 << 25)
 
 /* mhsp_ctl */
 #define MASK_MHSP_CTL_OVF_EN                (0x1)
