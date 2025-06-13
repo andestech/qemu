@@ -191,7 +191,8 @@ DEF("accel", HAS_ARG, QEMU_OPTION_accel,
     "                eager-split-size=n (KVM Eager Page Split chunk size, default 0, disabled. ARM only)\n"
     "                notify-vmexit=run|internal-error|disable,notify-window=n (enable notify VM exit and set notify window, x86 only)\n"
     "                thread=single|multi (enable multi-threaded TCG)\n"
-    "                device=path (KVM device path, default /dev/kvm)\n", QEMU_ARCH_ALL)
+    "                device=path (KVM device path, default /dev/kvm)\n"
+    "                rr-kick-period=time (TCG round-robin kick period in nanoseconds)\n", QEMU_ARCH_ALL)
 SRST
 ``-accel name[,prop=value[,...]]``
     This is used to enable an accelerator. Depending on the target
@@ -277,6 +278,12 @@ SRST
         option can be used to pass the KVM device to use via a file descriptor
         by setting the value to ``/dev/fdset/NN``.
 
+    ``rr-kick-period=time``
+        Controls the TCG round-robin kick period in nanoseconds. This option is
+        only effective when using single-threaded TCG. Reducing the period
+        can improve the fidelity of SMP simulation by allowing more frequent
+        vCPU switching, though it may negatively impact overall simulation
+        performance.
 ERST
 
 DEF("smp", HAS_ARG, QEMU_OPTION_smp,

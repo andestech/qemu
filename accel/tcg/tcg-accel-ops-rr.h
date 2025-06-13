@@ -10,7 +10,7 @@
 #ifndef TCG_ACCEL_OPS_RR_H
 #define TCG_ACCEL_OPS_RR_H
 
-#define TCG_KICK_PERIOD (NANOSECONDS_PER_SECOND / 10)
+extern uint64_t rr_kick_period;
 
 /* Kick all RR vCPUs. */
 void rr_kick_vcpu_thread(CPUState *unused);
