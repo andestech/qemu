@@ -66,6 +66,15 @@ static RISCVException mcfg3(CPURISCVState *env, int csrno)
     return RISCV_EXCP_ILLEGAL_INST;
 }
 
+static RISCVException mcfg4(CPURISCVState *env, int csrno)
+{
+    AndesCsr *csr = &env->andes_csr;
+    if ((csr->csrno[CSR_MMSC_CFG3] & MASK_MMSC_CFG3_MSC_EXT4) > 0) {
+        return RISCV_EXCP_NONE;
+    }
+    return RISCV_EXCP_ILLEGAL_INST;
+}
+
 static RISCVException amm(CPURISCVState *env, int csrno)
 {
     AndesCsr *csr = &env->andes_csr;
@@ -144,10 +153,34 @@ static RISCVException ppma(CPURISCVState *env, int csrno)
     if (get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_PPMA) == 0) {
         return RISCV_EXCP_ILLEGAL_INST;
     } else {
-        if (csrno == CSR_PMACFG1 || csrno == CSR_PMACFG3) {
-            if (riscv_cpu_mxl(env) != MXL_RV32) {
-                return RISCV_EXCP_ILLEGAL_INST;
+        if (riscv_cpu_mxl(env) != MXL_RV32) {
+            /* 16-entry PPMA in RV64 */
+            if (get_field(csr->csrno[CSR_MMSC_CFG3],
+                          MASK_MMSC_CFG3_PPMA_VER) == 0) {
+                if (csrno == CSR_PMACFG1 ||
+                    (csrno >= CSR_PMACFG3 && csrno <= CSR_PMACFG11) ||
+                    csrno > CSR_PMAADDR15) {
+                    return RISCV_EXCP_ILLEGAL_INST;
+                }
+            /* 48-entry PPMA in RV64 */
+            } else if (get_field(csr->csrno[CSR_MMSC_CFG3],
+                                 MASK_MMSC_CFG3_PPMA_VER) == 2) {
+                if (csrno == CSR_PMACFG1 || csrno == CSR_PMACFG3 ||
+                    csrno == CSR_PMACFG5 || csrno == CSR_PMACFG7 ||
+                    csrno == CSR_PMACFG9 || csrno == CSR_PMACFG11) {
+                    return RISCV_EXCP_ILLEGAL_INST;
+                }
             }
+        } else {
+            /* 16-entry PPMA in RV32 */
+            if (get_field(csr->csrno[CSR_MMSC_CFG4],
+                          MASK_MMSC_CFG4_PPMA_VER) == 0) {
+                if ((csrno >= CSR_PMACFG4 && csrno <= CSR_PMACFG11) ||
+                    csrno > CSR_PMAADDR15) {
+                    return RISCV_EXCP_ILLEGAL_INST;
+                }
+            }
+            /* 48-entry PPMA in RV32 can access all PMA CSRs*/
         }
         return RISCV_EXCP_NONE;
     }
@@ -1022,6 +1055,15 @@ static AndesCsrConfigInfo csr_mmsc_cfg2_map[]  = {
 static AndesCsrConfigInfo csr_mmsc_cfg3_map[]  = {
     {CONFIG_BOOL,   MASK_MMSC_CFG3_HVMCSR, "mmsc-cfg-hvmcsr"},
     {CONFIG_BOOL,   MASK_MMSC_CFG3_AMM, "mmsc-cfg-amm"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG3_MSC_EXT4, "msc-ext4"},
+#ifdef TARGET_RISCV64
+    /* bits:[32] */
+    {CONFIG_NUMBER, MASK_MMSC_CFG3_PPMA_VER, "ppma-ver"},
+#endif
+};
+
+static AndesCsrConfigInfo csr_mmsc_cfg4_map[]  = {
+    {CONFIG_NUMBER, MASK_MMSC_CFG4_PPMA_VER, "ppma-ver"},
 };
 
 static AndesCsrConfigInfo csr_mrvarch_cfg_map[] = {
@@ -1125,6 +1167,15 @@ void andes_csr_configs(CPURISCVState *env)
             sizeof(csr_mmsc_cfg3_map) / sizeof(AndesCsrConfigInfo),
             &mmsc3_init_val);
         env->andes_csr.csrno[CSR_MMSC_CFG3] = mmsc3_init_val;
+    }
+
+    /* Update mmsc_cfg4 if exists*/
+    if (mcfg4(env, CSR_MMSC_CFG4) == RISCV_EXCP_NONE) {
+        target_ulong mmsc4_init_val = env->andes_csr.csrno[CSR_MMSC_CFG4];
+        andes_csr_from_config(csr_mmsc_cfg4_map,
+            sizeof(csr_mmsc_cfg4_map) / sizeof(AndesCsrConfigInfo),
+            &mmsc4_init_val);
+        env->andes_csr.csrno[CSR_MMSC_CFG4] = mmsc4_init_val;
     }
 
     /* Update mrvarch_cfg */
@@ -1277,6 +1328,7 @@ riscv_csr_operations andes_csr_ops[CSR_TABLE_SIZE] = {
     [CSR_MMSC_CFG]          = { "mmsc_cfg",          any,     read_csr },
     [CSR_MMSC_CFG2]         = { "mmsc_cfg2",         mcfg2,   read_csr },
     [CSR_MMSC_CFG3]         = { "mmsc_cfg3",         mcfg3,   read_csr },
+    [CSR_MMSC_CFG4]         = { "mmsc_cfg4",         mcfg4,   read_csr },
     [CSR_MVEC_CFG]          = { "mvec_cfg",          veccfg,  read_csr },
     [CSR_MRVARCH_CFG]       = { "mrvarch_cfg",       rvarch,  read_csr },
     [CSR_MRVARCH_CFG2]      = { "mrvarch_cfg2",      rvarch2, read_csr },
@@ -1361,6 +1413,14 @@ riscv_csr_operations andes_csr_ops[CSR_TABLE_SIZE] = {
     [CSR_PMACFG1]   = { "pmacfg1",                ppma, read_csr, write_csr},
     [CSR_PMACFG2]   = { "pmacfg2",                ppma, read_csr, write_csr},
     [CSR_PMACFG3]   = { "pmacfg3",                ppma, read_csr, write_csr},
+    [CSR_PMACFG4]   = { "pmacfg4",                ppma, read_csr, write_csr},
+    [CSR_PMACFG5]   = { "pmacfg5",                ppma, read_csr, write_csr},
+    [CSR_PMACFG6]   = { "pmacfg6",                ppma, read_csr, write_csr},
+    [CSR_PMACFG7]   = { "pmacfg7",                ppma, read_csr, write_csr},
+    [CSR_PMACFG8]   = { "pmacfg8",                ppma, read_csr, write_csr},
+    [CSR_PMACFG9]   = { "pmacfg9",                ppma, read_csr, write_csr},
+    [CSR_PMACFG10]  = { "pmacfg10",               ppma, read_csr, write_csr},
+    [CSR_PMACFG11]  = { "pmacfg11",               ppma, read_csr, write_csr},
     [CSR_PMAADDR0]  = { "pmaaddr0",               ppma, read_csr, write_csr},
     [CSR_PMAADDR1]  = { "pmaaddr1",               ppma, read_csr, write_csr},
     [CSR_PMAADDR2]  = { "pmaaddr2",               ppma, read_csr, write_csr},
@@ -1377,6 +1437,38 @@ riscv_csr_operations andes_csr_ops[CSR_TABLE_SIZE] = {
     [CSR_PMAADDR13] = { "pmaaddr13",              ppma, read_csr, write_csr},
     [CSR_PMAADDR14] = { "pmaaddr14",              ppma, read_csr, write_csr},
     [CSR_PMAADDR15] = { "pmaaddr15",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR16] = { "pmaaddr16",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR17] = { "pmaaddr17",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR18] = { "pmaaddr18",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR19] = { "pmaaddr19",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR20] = { "pmaaddr20",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR21] = { "pmaaddr21",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR22] = { "pmaaddr22",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR23] = { "pmaaddr23",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR24] = { "pmaaddr24",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR25] = { "pmaaddr25",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR26] = { "pmaaddr26",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR27] = { "pmaaddr27",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR28] = { "pmaaddr28",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR29] = { "pmaaddr29",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR31] = { "pmaaddr31",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR32] = { "pmaaddr32",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR33] = { "pmaaddr33",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR34] = { "pmaaddr34",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR35] = { "pmaaddr35",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR36] = { "pmaaddr36",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR37] = { "pmaaddr37",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR38] = { "pmaaddr38",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR39] = { "pmaaddr39",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR30] = { "pmaaddr30",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR40] = { "pmaaddr40",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR41] = { "pmaaddr41",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR42] = { "pmaaddr42",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR43] = { "pmaaddr43",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR44] = { "pmaaddr44",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR45] = { "pmaaddr45",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR46] = { "pmaaddr46",              ppma, read_csr, write_csr},
+    [CSR_PMAADDR47] = { "pmaaddr47",              ppma, read_csr, write_csr},
 
     /* ================ AndeStar V5 supervisor mode CSRs ================ */
     /* Supervisor trap registers */

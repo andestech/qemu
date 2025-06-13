@@ -12,6 +12,7 @@
 #define CSR_MMSC_CFG            0xfc2
 #define CSR_MMSC_CFG2           0xfc3
 #define CSR_MMSC_CFG3           0xfc4
+#define CSR_MMSC_CFG4           0xfc5
 #define CSR_MVEC_CFG            0xfc7
 #define CSR_MRVARCH_CFG         0xfca
 #define CSR_MRVARCH_CFG2        0xfcb
@@ -76,6 +77,14 @@
 #define CSR_PMACFG1             0xbc1
 #define CSR_PMACFG2             0xbc2
 #define CSR_PMACFG3             0xbc3
+#define CSR_PMACFG4             0xbc4
+#define CSR_PMACFG5             0xbc5
+#define CSR_PMACFG6             0xbc6
+#define CSR_PMACFG7             0xbc7
+#define CSR_PMACFG8             0xbc8
+#define CSR_PMACFG9             0xbc9
+#define CSR_PMACFG10            0xbca
+#define CSR_PMACFG11            0xbcb
 #define CSR_PMAADDR0            0xbd0
 #define CSR_PMAADDR1            0xbd1
 #define CSR_PMAADDR2            0xbd2
@@ -92,6 +101,38 @@
 #define CSR_PMAADDR13           0xbdd
 #define CSR_PMAADDR14           0xbde
 #define CSR_PMAADDR15           0xbdf
+#define CSR_PMAADDR16           0xbe0
+#define CSR_PMAADDR17           0xbe1
+#define CSR_PMAADDR18           0xbe2
+#define CSR_PMAADDR19           0xbe3
+#define CSR_PMAADDR20           0xbe4
+#define CSR_PMAADDR21           0xbe5
+#define CSR_PMAADDR22           0xbe6
+#define CSR_PMAADDR23           0xbe7
+#define CSR_PMAADDR24           0xbe8
+#define CSR_PMAADDR25           0xbe9
+#define CSR_PMAADDR26           0xbea
+#define CSR_PMAADDR27           0xbeb
+#define CSR_PMAADDR28           0xbec
+#define CSR_PMAADDR29           0xbed
+#define CSR_PMAADDR30           0xbee
+#define CSR_PMAADDR31           0xbef
+#define CSR_PMAADDR32           0xbf0
+#define CSR_PMAADDR33           0xbf1
+#define CSR_PMAADDR34           0xbf2
+#define CSR_PMAADDR35           0xbf3
+#define CSR_PMAADDR36           0xbf4
+#define CSR_PMAADDR37           0xbf5
+#define CSR_PMAADDR38           0xbf6
+#define CSR_PMAADDR39           0xbf7
+#define CSR_PMAADDR40           0xbf8
+#define CSR_PMAADDR41           0xbf9
+#define CSR_PMAADDR42           0xbfa
+#define CSR_PMAADDR43           0xbfb
+#define CSR_PMAADDR44           0xbfc
+#define CSR_PMAADDR45           0xbfd
+#define CSR_PMAADDR46           0xbfe
+#define CSR_PMAADDR47           0xbff
 
 /* ========= AndeStar V5 supervisor mode CSRs ========= */
 /* Supervisor trap registers */

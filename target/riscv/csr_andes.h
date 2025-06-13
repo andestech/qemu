@@ -260,6 +260,13 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define MASK_MMSC_CFG3_DLM_ECC_GRAN         (0x7 << 22)
 #define MASK_MMSC_CFG3_TLB_ECC_GRAN         (0x7 << 25)
 #define MASK_MMSC_CFG3_BTB_ECC_GRAN         (0x7 << 28)
+/* cast to uint64_t for set_field() operation */
+#define MASK_MMSC_CFG3_MSC_EXT4             ((uint64_t)0x1 << 31)
+/* for RV64 mmsc_cfg_3 */
+#define MASK_MMSC_CFG3_PPMA_VER             ((uint64_t)0x7 << 32)
+
+/* mmsc_cfg4 */
+#define MASK_MMSC_CFG4_PPMA_VER             (0x7)
 
 /* mcause */
 #define MASK_MCAUSE_EXCEPTION_CODE_32       (~MASK_MCAUSE_INTERRUPT_32)
