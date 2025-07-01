@@ -2213,6 +2213,10 @@ static RISCVException rmw_xiselect(CPURISCVState *env, int csrno,
         wr_mask &= ISELECT_MASK_AIA;
     }
 
+    if (riscv_cpu_cfg(env)->ext_XAndesV5Ops) {
+        wr_mask = CSRIND_ISEL_MASK;
+    }
+
     if (wr_mask) {
         *iselect = (*iselect & ~wr_mask) | (new_val & wr_mask);
     }
@@ -2362,7 +2366,11 @@ static int rmw_xireg_csrind(CPURISCVState *env, int csrno,
                               target_ulong isel, target_ulong *val,
                               target_ulong new_val, target_ulong wr_mask)
 {
-    return -EINVAL;
+    int ret = -EINVAL;
+    if (env_archcpu(env)->cfg.ext_XAndesV5Ops) {
+        ret = andes_rmw_xireg_csrind(env, csrno, isel, val, new_val, wr_mask);
+    }
+    return ret;
 }
 
 static int rmw_xiregi(CPURISCVState *env, int csrno, target_ulong *val,

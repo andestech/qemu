@@ -912,6 +912,89 @@ static RISCVException write_pmnds(CPURISCVState *env, int csrno,
     return RISCV_EXCP_ILLEGAL_INST;
 }
 
+static RISCVException rmw_impd01(CPURISCVState *env, int csrno,
+                                 target_ulong *ret_value,
+                                 target_ulong new_value,
+                                 target_ulong write_mask)
+{
+    int xireg_offset = csrno & 0xf;
+    int csrind_idx = 0;
+
+    if (xireg_offset == 0x3) {
+        csrind_idx = CSRIND_IMPD0;
+    } else if (xireg_offset == 0x4) {
+        csrind_idx = CSRIND_IMPD1;
+    } else {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    if (ret_value) {
+        *ret_value = env->andes_csr.csrind[csrind_idx];
+    }
+
+    if (write_mask) {
+        env->andes_csr.csrind[csrind_idx] = new_value & write_mask;
+    }
+
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException rmw_impd23(CPURISCVState *env, int csrno,
+                                 target_ulong *ret_value,
+                                 target_ulong new_value,
+                                 target_ulong write_mask)
+{
+    int xireg_offset = csrno & 0xf;
+    int csrind_idx = 0;
+
+    if (xireg_offset == 0x3) {
+        csrind_idx = CSRIND_IMPD2;
+    } else if (xireg_offset == 0x4) {
+        csrind_idx = CSRIND_IMPD3;
+    } else {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    if (ret_value) {
+        *ret_value = env->andes_csr.csrind[csrind_idx];
+    }
+
+    if (write_mask) {
+        env->andes_csr.csrind[csrind_idx] = new_value & write_mask;
+    }
+
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException rmw_shadow(CPURISCVState *env, int csrno,
+                                 target_ulong *ret_value,
+                                 target_ulong new_value,
+                                 target_ulong write_mask)
+{
+    int xireg_offset = csrno & 0xf;
+    int csrind_idx = 0;
+
+    if (xireg_offset == 0x1) {
+        csrind_idx = CSRIND_SHADOW_CFG;
+    } else if (xireg_offset == 0x2) {
+        csrind_idx = CSRIND_SHADOW_CTL;
+    } else if (xireg_offset == 0x3) {
+        csrind_idx = CSRIND_SHADOW_DBG;
+    } else {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    if (ret_value) {
+        *ret_value = env->andes_csr.csrind[csrind_idx];
+    }
+
+    if (write_mask) {
+        env->andes_csr.csrind[csrind_idx] = new_value & write_mask;
+    }
+
+    return RISCV_EXCP_NONE;
+}
+
 static RISCVException write_all_ignore(CPURISCVState *env, int csrno,
                                        target_ulong val)
 {
@@ -1322,6 +1405,24 @@ void andes_cpu_do_interrupt_post(CPUState *cs)
         }
     }
 #endif
+}
+
+RISCVException andes_rmw_xireg_csrind(CPURISCVState *env, int csrno,
+                                      target_ulong isel,
+                                      target_ulong *ret_value,
+                                      target_ulong new_value,
+                                      target_ulong write_mask)
+{
+    switch (isel & CSRIND_ISEL_MASK) {
+    case CSRIND_ISEL_IMPD01:
+        return rmw_impd01(env, csrno, ret_value, new_value, write_mask);
+    case CSRIND_ISEL_IMPD23:
+        return rmw_impd23(env, csrno, ret_value, new_value, write_mask);
+    case CSRIND_ISEL_SHADOW:
+        return rmw_shadow(env, csrno, ret_value, new_value, write_mask);
+    default:
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
 }
 
 riscv_csr_operations andes_csr_ops[CSR_TABLE_SIZE] = {

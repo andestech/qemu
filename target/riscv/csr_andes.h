@@ -4,9 +4,11 @@
 #include "andes_cpu_bits.h"
 
 #define ANDES_CSR_TABLE_SIZE 0x1000
+#define ANDES_CSRIND_TABLE_SIZE 0x100
 
 typedef struct andes_csr {
     target_ulong csrno[ANDES_CSR_TABLE_SIZE];
+    target_ulong csrind[ANDES_CSRIND_TABLE_SIZE];
 } AndesCsr;
 
 typedef struct AndesVec {
@@ -488,6 +490,10 @@ void andes_csr_init(AndesCsr *);
 void andes_vec_init(AndesVec *);
 void andes_cpu_do_interrupt_post(CPUState *cpu);
 
-void andes_spec_csr_init_nx45v(AndesCsr *);
+RISCVException andes_rmw_xireg_csrind(CPURISCVState *env, int csrno,
+                                      target_ulong isel,
+                                      target_ulong *ret_value,
+                                      target_ulong new_value,
+                                      target_ulong write_mask);
 
 #endif /* RISCV_CSR_ANDES_INC_H */

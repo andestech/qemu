@@ -169,6 +169,19 @@
 #define CSR_TXEVT               0x812
 #define CSR_UMISC_CTL           0x813
 
+/* ========= AndeStar V5 Indirect CSRs ========= */
+#define CSRIND_ISEL_MASK        0xfffffff
+#define CSRIND_ISEL_SHADOW      0x1000
+#define CSRIND_ISEL_IMPD01      0x2000
+#define CSRIND_ISEL_IMPD23      0x2001
+#define CSRIND_IMPD0            0x0
+#define CSRIND_IMPD1            0x1
+#define CSRIND_IMPD2            0x2
+#define CSRIND_IMPD3            0x3
+#define CSRIND_SHADOW_CFG       0x10
+#define CSRIND_SHADOW_CTL       0x11
+#define CSRIND_SHADOW_DBG       0x12
+
 /* ========= AndeStar V5 CPUID definitions ========= */
 #define ANDES_CPUID_MSB_32      (1 << 31)
 #define ANDES_CPUID_MSB_64      (1ULL << 63)
