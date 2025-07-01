@@ -27,6 +27,15 @@
 #include "hw/qdev-properties.h"
 #include "hw/timer/andes_plmt.h"
 
+/*
+ * timecmp_value = timer_ns / NANOSECONDS_PER_SECOND * timebase-freq
+ *
+ * If the timebase-freq is equal to MAX_FREQ_NEED_CALCULATE_TIMECMP, that means
+ * the INT64_MAX timer_ns will be converted to the UINT64MAX timecmp_value.
+ */
+#define MAX_FREQ_NEED_CALCULATE_TIMECMP (UINT64_MAX / INT64_MAX * NANOSECONDS_PER_SECOND)
+#define INT64_MAX_NS_TO_SECS (INT64_MAX / NANOSECONDS_PER_SECOND)
+
 typedef struct andes_plmt_callback {
     AndesPLMTState *plmt;
     int hartid;
@@ -54,10 +63,12 @@ andes_plmt_write_timecmp(AndesPLMTState *plmt, RISCVCPU *cpu,
 {
     uint64_t next;
     uint64_t diff;
+    /* max value that does not cause timer_ns to overflow */
+    uint64_t timecmp_max_value;
 
     uint64_t rtc_r = andes_cpu_riscv_read_rtc(plmt);
 
-    plmt->timecmp[hartid] = (uint64_t)value;
+    plmt->timecmp[hartid] = value;
     if (plmt->timecmp[hartid] <= rtc_r) {
         /*
          * if we're setting an timecmp value in the "past",
@@ -71,9 +82,32 @@ andes_plmt_write_timecmp(AndesPLMTState *plmt, RISCVCPU *cpu,
     qemu_irq_lower(plmt->timer_irqs[hartid]);
     diff = plmt->timecmp[hartid] - rtc_r;
 
-    /* back to ns (note args switched in muldiv64) */
-    next = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
-            muldiv64(diff, NANOSECONDS_PER_SECOND, plmt->timebase_freq);
+    /*
+     * If the timebase-freq is greater than MAX_FREQ_NEED_CALCULATE_TIMECMP,
+     * the INT64_MAX timer_ns will be converted to a timecmp_value
+     * greater than UINT64_MAX. In this case we limit timecmp_max_value
+     * to UINT64_MAX.
+     */
+    if (plmt->timebase_freq > MAX_FREQ_NEED_CALCULATE_TIMECMP) {
+        timecmp_max_value = UINT64_MAX;
+    } else {
+        timecmp_max_value = plmt->timebase_freq * INT64_MAX_NS_TO_SECS;
+    }
+
+    /*
+     * If the timecmp_value is greater than timecmp_max_value, it will be
+     * converted to a timer_ns greater than INT64_MAX, meaning an overflows
+     * occurs. In the case of timecmp_max_value == UINT64_MAX, the conversion
+     * never overflows.
+     */
+    if (plmt->timecmp[hartid] > timecmp_max_value) {
+        next = INT64_MAX;
+    } else {
+        /* back to ns (note args switched in muldiv64) */
+        next = qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
+                muldiv64(diff, NANOSECONDS_PER_SECOND, plmt->timebase_freq);
+    }
+
     timer_mod(plmt->timers[hartid], next);
 }
 

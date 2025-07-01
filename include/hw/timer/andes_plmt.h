@@ -27,7 +27,6 @@
 typedef struct AndesPLMTState {
     /*< private >*/
     SysBusDevice parent_obj;
-    uint64_t time_delta;
     uint64_t *timecmp;
     QEMUTimer **timers;
 
