@@ -2312,6 +2312,7 @@ static int gdb_handle_packet(const char *line_buf)
                 .handler = gdb_handle_file_io,
                 .cmd = "F",
                 .cmd_startswith = true,
+                .allow_stop_reply = true,
                 .schema = "L,L,o0"
             };
             cmd_parser = &file_io_cmd_desc;
