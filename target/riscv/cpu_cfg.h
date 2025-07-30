@@ -197,6 +197,7 @@ struct RISCVCPUConfig {
     bool debug;
     bool misa_w;
     bool ext_sdtrig_tcontrol;
+    bool vext_ldst_no_misaligned;
 
     bool short_isa_string;
 

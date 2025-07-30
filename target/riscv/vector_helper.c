@@ -336,9 +336,22 @@ vext_page_ldst_us(CPURISCVState *env, void *vd, target_ulong addr,
     uint32_t size = (elems * nf) << log2_esz;
     uint32_t evl = env->vstart + elems;
     MMUAccessType access_type = is_load ? MMU_DATA_LOAD : MMU_DATA_STORE;
+    target_ulong adjusted_addr = adjust_addr(env, addr);
+
+    if (env_archcpu(env)->cfg.vext_ldst_no_misaligned) {
+        if (adjusted_addr & (esz - 1)) {
+            env->badaddr = adjusted_addr;
+            if (is_load) {
+                riscv_raise_exception(env, RISCV_EXCP_LOAD_ADDR_MIS, GETPC());
+            } else {
+                riscv_raise_exception(env, RISCV_EXCP_STORE_AMO_ADDR_MIS,
+                                      GETPC());
+            }
+        }
+    }
 
     /* Check page permission/pmp/watchpoint/etc. */
-    flags = probe_access_flags(env, adjust_addr(env, addr), size, access_type,
+    flags = probe_access_flags(env, adjusted_addr, size, access_type,
                                mmu_index, true, &host, ra);
 
     if (flags == 0) {
@@ -365,7 +378,7 @@ vext_page_ldst_us(CPURISCVState *env, void *vd, target_ulong addr,
             for (i = env->vstart; i < evl; env->vstart = ++i) {
                 k = 0;
                 while (k < nf) {
-                    ldst_tlb(env, adjust_addr(env, addr), i + k * max_elems,
+                    ldst_tlb(env, adjusted_addr, i + k * max_elems,
                              vd, ra);
                     addr += esz;
                     k++;

@@ -1011,6 +1011,7 @@ static void rv64_andes_ax45mpv_cpu_init(Object *obj)
 
     /* Vector */
     env->vext_ver = VEXT_VERSION_1_00_0;
+    cfg->vext_ldst_no_misaligned = true;
     cfg->vlenb = 128;
     cfg->elen  = 64;
 
@@ -1107,6 +1108,7 @@ static void rv64_andes_ax46mpv_cpu_init(Object *obj)
 
     /* Vector */
     env->vext_ver = VEXT_VERSION_1_00_0;
+    cfg->vext_ldst_no_misaligned = true;
     cfg->vlenb = 128;
     cfg->elen  = 64;
 
