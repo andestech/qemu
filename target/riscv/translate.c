@@ -1213,7 +1213,16 @@ static inline int insn_len(uint16_t first_word)
 
 const RISCVDecoder decoder_table[] = {
     { always_true_p, decode_insn32 },
-    { has_no_zvknh_p, decode_insn32_rvp},
+    /*
+     * The P extension v0.5.2 uses ">80b" section (opcode 0b1111111) of
+     * the opcode map. In v0.9.2, the opcode was changed to the "OP-P" section
+     * (opcode 0b1110111), which is now marked as the "OP-VE" section.
+     *
+     * We currently support only v0.5.2, so decoding for this extension is
+     * always included. If support for v0.9.2 or later is added in the future,
+     * the opcode conflicts must be carefully handled.
+     */
+    { always_true_p, decode_insn32_rvp},
     { has_xthead_p, decode_xthead},
     { has_XVentanaCondOps_p, decode_XVentanaCodeOps},
     { has_XAndesV5Ops_p,  decode_XAndesV5Ops },

@@ -218,11 +218,6 @@ static inline bool always_true_p(const RISCVCPUConfig *cfg __attribute__((__unus
     return true;
 }
 
-static inline bool has_no_zvknh_p(const RISCVCPUConfig *cfg)
-{
-    return !(cfg->ext_zvknha || cfg->ext_zvknhb);
-}
-
 static inline bool has_xthead_p(const RISCVCPUConfig *cfg)
 {
     return cfg->ext_xtheadba || cfg->ext_xtheadbb ||
