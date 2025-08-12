@@ -5073,6 +5073,8 @@ static size_t inst_length(rv_inst inst)
          : (inst &   0b11100) != 0b11100   ? 4
          : (inst &  0b111111) == 0b011111  ? 6
          : (inst & 0b1111111) == 0b0111111 ? 8
+         /* The P extension v0.5.2 uses ">80b" section (opcode 0b1111111) */
+         : (inst & 0b1111111) == 0b1111111 ? 4
          : 0;
 }
 
