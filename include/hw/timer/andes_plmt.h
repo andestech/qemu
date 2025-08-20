@@ -24,9 +24,17 @@
 #define ANDES_PLMT(obj) \
     OBJECT_CHECK(AndesPLMTState, (obj), TYPE_ANDES_PLMT)
 
+/*
+ * We use "riscv_cpu_set_rdtime_fn()" to register Andes PLMT as the source of
+ * the machine timer. In the "riscv_timer_write_timecmp()", the common code
+ * assumes that the type of the device state is "struct RISCVAclintMTimerState".
+ * Therefore, our structure must maintain field compatibility with
+ * "struct RISCVAclintMTimerState".
+ */
 typedef struct AndesPLMTState {
     /*< private >*/
     SysBusDevice parent_obj;
+    uint64_t time_delta;
     uint64_t *timecmp;
     QEMUTimer **timers;
 
