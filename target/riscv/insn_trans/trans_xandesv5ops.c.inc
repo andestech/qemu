@@ -348,7 +348,7 @@ static void gen_store_legacy(DisasContext *ctx, uint32_t opc, int rs1,
 static void gen_load_legacy(DisasContext *ctx, uint32_t opc, int rd,
                             int rs1, target_long imm)
 {
-    TCGv t0, base, dat;
+    TCGv t0, base, dest;
     int memop;
     const int tcg_memop_lookup_local[8] = {
         [0 ... 7] = -1,
@@ -372,9 +372,10 @@ static void gen_load_legacy(DisasContext *ctx, uint32_t opc, int rd,
 
     t0 = tcg_temp_new();
     base = get_gpr(ctx, rs1, EXT_NONE);
-    dat = get_gpr(ctx, rd, EXT_NONE);
+    dest = dest_gpr(ctx, rd);
     tcg_gen_addi_tl(t0, base, imm);
-    tcg_gen_qemu_ld_tl(dat, t0, ctx->mem_idx, memop);
+    tcg_gen_qemu_ld_tl(dest, t0, ctx->mem_idx, memop);
+    gen_set_gpr(ctx, rd, dest);
 }
 
 static bool trans_addigp(DisasContext *ctx, arg_addigp *a)
