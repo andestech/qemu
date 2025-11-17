@@ -238,6 +238,7 @@ const RISCVIsaExtData isa_edata_arr[] = {
     ISA_EXT_DATA_ENTRY(xandesv5ops, PRIV_VERSION_1_12_0, ext_XAndesV5Ops),
     ISA_EXT_DATA_ENTRY(xandescodenseops, PRIV_VERSION_1_12_0, ext_XAndesCodenseOps),
     ISA_EXT_DATA_ENTRY(xandesace, PRIV_VERSION_1_12_0, ext_XAndesAce),
+    ISA_EXT_DATA_ENTRY(xandesaceextra, PRIV_VERSION_1_12_0, ext_XAndesAceExtra),
     ISA_EXT_DATA_ENTRY(xandesacemulti, PRIV_VERSION_1_12_0, ext_XAndesAceMulti),
     ISA_EXT_DATA_ENTRY(xandesvmm, PRIV_VERSION_1_12_0, ext_XAndesVMM),
 
@@ -898,6 +899,7 @@ static void rv64_andes_common_cpu_init(Object *obj,
 
     /* Enable Andes Custom extension */
     cfg->ext_XAndesV5Ops = true;
+    cfg->ext_XAndesV5Isa = true;
     cfg->ext_XAndesCodenseOps = true;
 
     /* Set vendor ID */
@@ -1525,6 +1527,7 @@ static void rv32_andes_common_cpu_init(Object *obj,
 
     /* Enable Andes Custom extension */
     cfg->ext_XAndesV5Ops = true;
+    cfg->ext_XAndesV5Isa = true;
     cfg->ext_XAndesCodenseOps = true;
 
     /* Set vendor ID */
@@ -3150,8 +3153,10 @@ const RISCVCPUMultiExtConfig riscv_cpu_vendor_exts[] = {
     MULTI_EXT_CFG_BOOL("xtheadsync", ext_xtheadsync, false),
     MULTI_EXT_CFG_BOOL("xventanacondops", ext_XVentanaCondOps, false),
     MULTI_EXT_CFG_BOOL("xandesv5ops", ext_XAndesV5Ops, false),
+    MULTI_EXT_CFG_BOOL("xandesv5isa", ext_XAndesV5Isa, false),
     MULTI_EXT_CFG_BOOL("xandescodenseops", ext_XAndesCodenseOps, false),
     MULTI_EXT_CFG_BOOL("xandesace", ext_XAndesAce, false),
+    MULTI_EXT_CFG_BOOL("xandesaceextra", ext_XAndesAceExtra, false),
     MULTI_EXT_CFG_BOOL("xandesacemulti", ext_XAndesAceMulti, false),
     MULTI_EXT_CFG_BOOL("xandesvmm", ext_XAndesVMM, false),
 

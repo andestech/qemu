@@ -13,12 +13,11 @@
 } while (0)
 
 #include "andes_ace_helper.c.inc"
+/* Original Custom-3 */
 static bool trans_andes_ace(DisasContext *ctx, arg_andes_ace *a)
 {
     if (!ctx->cfg_ptr->ext_XAndesAce) {
         qemu_printf("XAndesAce not set\n");
-        riscv_raise_exception(cpu_env(ctx->cs),
-            RISCV_EXCP_ILLEGAL_INST, GETPC());
         return false;
     }
     REQUIRE_ACE;
@@ -29,4 +28,31 @@ static bool trans_andes_ace(DisasContext *ctx, arg_andes_ace *a)
     lookup_and_goto_ptr(ctx);
 
     return true;
+}
+
+/* Custom-0 */
+static bool trans_andes_ace0(DisasContext *ctx, arg_andes_ace *a)
+{
+    if (!ctx->cfg_ptr->ext_XAndesAce || !ctx->cfg_ptr->ext_XAndesAceExtra) {
+        return false;
+    }
+    return trans_andes_ace(ctx, a);
+}
+
+/* Custom-1 */
+static bool trans_andes_ace1(DisasContext *ctx, arg_andes_ace *a)
+{
+    if (!ctx->cfg_ptr->ext_XAndesAce || !ctx->cfg_ptr->ext_XAndesAceExtra) {
+        return false;
+    }
+    return trans_andes_ace(ctx, a);
+}
+
+/* Custom-2 */
+static bool trans_andes_ace2(DisasContext *ctx, arg_andes_ace *a)
+{
+    if (!ctx->cfg_ptr->ext_XAndesAce || !ctx->cfg_ptr->ext_XAndesAceExtra) {
+        return false;
+    }
+    return trans_andes_ace(ctx, a);
 }

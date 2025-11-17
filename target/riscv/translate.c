@@ -1194,11 +1194,11 @@ static uint32_t opcode_at(DisasContextBase *dcbase, target_ulong pc)
 #include "decode-XVentanaCondOps.c.inc"
 
 /* Include AndeStar V5 extensions */
-#include "decode-XAndesV5Ops.c.inc"
+#include "decode-XAndesV5Isa.c.inc"
 #include "decode-XAndesCodenseOps.c.inc"
 #include "decode-XAndesAce.c.inc"
 #include "decode-XAndesVMM.c.inc"
-#include "insn_trans/trans_xandesv5ops.c.inc"
+#include "insn_trans/trans_xandesv5isa.c.inc"
 #include "insn_trans/trans_xandescodenseops.c.inc"
 #include "insn_trans/trans_xandesace.c.inc"
 #include "insn_trans/trans_xandesvmm.c.inc"
@@ -1225,9 +1225,9 @@ const RISCVDecoder decoder_table[] = {
     { always_true_p, decode_insn32_rvp},
     { has_xthead_p, decode_xthead},
     { has_XVentanaCondOps_p, decode_XVentanaCodeOps},
-    { has_XAndesV5Ops_p,  decode_XAndesV5Ops },
-    { has_XAndesAce_p,  decode_XAndesAce },
+    { has_XAndesV5Isa_p,  decode_XAndesV5Isa },
     { has_XAndesVMM_p,  decode_XAndesVMM },
+    { has_XAndesAce_p,  decode_XAndesAce },
 };
 
 const RISCVDecoder16 decoder16_table[] = {
