@@ -864,7 +864,8 @@ static const struct MemMapEntry iopmp100_protect_regions[] = {
     [IOPMP100_PORT_SSP_PROTECT_REGION]              = { 0xf0d00000, 0x100000 },
     [IOPMP100_PORT_DTROM_PROTECT_REGION]            = { 0xf2000000, 0x100000 },
     [IOPMP100_PORT_IOPMP_PROTECT_REGION]            = { 0xf1000000, 0x100000 },
-    [IOPMP100_PORT_ABPBRG_APBDEC_PROTECT_REGION]    = { 0xf0000000, 0x100000 }
+    [IOPMP100_PORT_ABPBRG_APBDEC_PROTECT_REGION]    = { 0xf0000000, 0x100000 },
+    [IOPMP100_PORT_UART3_PROTECT_REGION]            = { 0xf1100000, 0x100000 }
 };
 
 static void iopmp_setup_cpus(RISCVHartArrayState *cpus, uint32_t rrid)
@@ -1128,6 +1129,13 @@ static void andes_ae350_soc_realize(DeviceState *dev_soc, Error **errp)
             }
             token = strtok(NULL, "+");
         }
+
+        serial_mm_init(system_memory,
+                       memmap[ANDES_AE350_UART3].base + ANDES_UART_REG_OFFSET,
+                       ANDES_UART_REG_SHIFT,
+                       qdev_get_gpio_in(DEVICE(s->irqchip),
+                       ANDES_AE350_UART3_IRQ),
+                       38400, serial_hd(2), DEVICE_LITTLE_ENDIAN);
     } else {
         object_property_set_str(obj, "secure_platform",
                                 ANDES_SECURE_PLATFORM_NONE, &error_abort);
