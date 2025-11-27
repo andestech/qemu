@@ -2964,6 +2964,7 @@ static const MISAExtInfo misa_ext_info_arr[] = {
     MISA_EXT_INFO(RVG, "g", "General purpose (IMAFD_Zicsr_Zifencei)"),
     MISA_EXT_INFO(RVB, "b", "Bit manipulation (Zba_Zbb_Zbs)"),
     MISA_EXT_INFO(RVX, "x", "Non-standard extensions present"),
+    MISA_EXT_INFO(RVP, "p", "Packed SIMD extension"),
 };
 
 static void riscv_cpu_validate_misa_mxl(RISCVCPUClass *mcc)
