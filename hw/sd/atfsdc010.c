@@ -55,6 +55,10 @@
 #define FTSDC_STATUS_CARD_CHANGE      (1 << 10)
 #define FTSDC_STATUS_CARD_DETECT      (1 << 11)
 #define FTSDC_STATUS_WRITE_PROT       (1 << 12)
+#define FTSDC_STATUS_DATA0_STATUS     (1 << 17)
+
+#define SET_BUSY_FTSDC_STATUS_DATA0(status) (status & ~FTSDC_STATUS_DATA0_STATUS)
+#define SET_IDLE_FTSDC_STATUS_DATA0(status) (status | FTSDC_STATUS_DATA0_STATUS)
 
 static void atfsdc010_reset_cmd(void *opaque)
 {
@@ -72,7 +76,7 @@ static void atfsdc010_reset_cmd(void *opaque)
     s->datatimer = 0;
     s->datactrl = 0;
     s->datacnt = 0;
-    s->status = 0;
+    s->status = SET_IDLE_FTSDC_STATUS_DATA0(s->status);
     s->mask = 0x400;
     s->feature = 4;
     s->revision = ATFSDC_REVISION;
