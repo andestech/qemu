@@ -937,6 +937,11 @@ static void rv64_andes_ax25_cpu_init(Object *obj)
 #endif
 }
 
+static void rv64_andes_ax25mp_cpu_init(Object *obj)
+{
+    rv64_andes_ax25_cpu_init(obj);
+}
+
 static void rv64_andes_ax27_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -991,6 +996,11 @@ static void rv64_andes_ax45_cpu_init(Object *obj)
                                          BIT_ULL(V5_MMSC_CFG_ZFH) |
                                          BIT_ULL(V5_MMSC_CFG_FINV) |
                                          BIT_ULL(V5_MMSC_CFG_TLB_RAM_CMD);
+}
+
+static void rv64_andes_ax45mp_cpu_init(Object *obj)
+{
+    rv64_andes_ax45_cpu_init(obj);
 }
 
 static void rv64_andes_ax45mpv_cpu_init(Object *obj)
@@ -1565,6 +1575,11 @@ static void rv32_andes_a25_cpu_init(Object *obj)
 #endif
 }
 
+static void rv32_andes_a25mp_cpu_init(Object *obj)
+{
+    rv32_andes_a25_cpu_init(obj);
+}
+
 static void rv32_andes_a27_cpu_init(Object *obj)
 {
     RISCVCPUConfig *cfg = &RISCV_CPU(obj)->cfg;
@@ -1615,6 +1630,11 @@ static void rv32_andes_a45_cpu_init(Object *obj)
                                          BIT(V5_MMSC_CFG_EDSP) |
                                          BIT(V5_MMSC_CFG_PPMA) |
                                          BIT(V5_MMSC_CFG_MSC_EXT);
+}
+
+static void rv32_andes_a45mp_cpu_init(Object *obj)
+{
+    rv32_andes_a45_cpu_init(obj);
 }
 
 static void rv32_andes_a46mp_cpu_init(Object *obj)
@@ -4593,8 +4613,10 @@ static const TypeInfo riscv_cpu_type_infos[] = {
     (defined(TARGET_RISCV64) && !defined(CONFIG_USER_ONLY))
     DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE32,        MXL_RV32,  rv32_base_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A25,      MXL_RV32,  rv32_andes_a25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A25MP,    MXL_RV32,  rv32_andes_a25mp_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A27,      MXL_RV32,  rv32_andes_a27_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45,      MXL_RV32,  rv32_andes_a45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A45MP,    MXL_RV32,  rv32_andes_a45mp_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A46MP,    MXL_RV32,  rv32_andes_a46mp_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_A46MPV,   MXL_RV32,  rv32_andes_a46mpv_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_D23,      MXL_RV32,  rv32_andes_d23_cpu_init),
@@ -4621,8 +4643,10 @@ static const TypeInfo riscv_cpu_type_infos[] = {
 #if defined(TARGET_RISCV64)
     DEFINE_DYNAMIC_CPU(TYPE_RISCV_CPU_BASE64,        MXL_RV64,  rv64_base_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX25,     MXL_RV64,  rv64_andes_ax25_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX25MP,   MXL_RV64,  rv64_andes_ax25mp_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX27,     MXL_RV64,  rv64_andes_ax27_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45,     MXL_RV64,  rv64_andes_ax45_cpu_init),
+    DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45MP,   MXL_RV64,  rv64_andes_ax45mp_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX45MPV,  MXL_RV64,  rv64_andes_ax45mpv_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX46MP,   MXL_RV64,  rv64_andes_ax46mp_cpu_init),
     DEFINE_VENDOR_CPU(TYPE_RISCV_CPU_ANDES_AX46MPV,  MXL_RV64,  rv64_andes_ax46mpv_cpu_init),
