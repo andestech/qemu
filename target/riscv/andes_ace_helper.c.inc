@@ -190,9 +190,6 @@ uint64_t qemu_get_FRF(CPURISCVState *env, uint32_t index)
 
 void qemu_set_FRF(CPURISCVState *env, uint32_t index, uint64_t value)
 {
-    if (index == 0) {
-        return;
-    }
     /* Should we check FP enable? */
     /* only updates mstatus, doesn't update ctx->mstatus_fs */
 #if !defined(CONFIG_USER_ONLY)
@@ -201,13 +198,13 @@ void qemu_set_FRF(CPURISCVState *env, uint32_t index, uint64_t value)
         env->mstatus |= MSTATUS_FS;
     }
 #endif
+
     /*
-     * We assume that RV32 never includes RVD,
-     * so RV32 always performs NaN-boxing (including RV32 mode within RV64).
-     * If RV64 supports RVF but not RVD, NaN-boxing is also required.
+     * The type of env->fpr is uint64_t. If RVD is not supported, only the
+     * lower 32 bits are used. When writing to env->fpr in this case, the
+     * upper 32 bits must be all 1s (NaN-boxing).
      */
-    if (env->xl == MXL_RV32 ||
-       (env->xl == MXL_RV64 && !riscv_has_ext(env, RVD))) {
+    if (!riscv_has_ext(env, RVD)) {
         value = nanbox_s(env, (float32)value);
     }
 
