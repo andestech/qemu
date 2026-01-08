@@ -1006,33 +1006,36 @@ static RISCVException write_lmb(CPURISCVState *env,
                                 int csrno,
                                 target_ulong val)
 {
-    uint64_t enable = val & 0x1;
-    bool ilm_mapped, dlm_mapped;
+    bool lm_mapped;
+    uint64_t lm_base;
+    MemoryRegion *lm_mr;
+
+    if (csrno == CSR_MILMB && env->mask_ilm) {
+        lm_mapped = memory_region_is_mapped(env->mask_ilm);
+        lm_base = env->ilm_base;
+        lm_mr = env->mask_ilm;
+    } else if (csrno == CSR_MDLMB && env->mask_dlm) {
+        lm_mapped = memory_region_is_mapped(env->mask_dlm);
+        lm_base = env->dlm_base;
+        lm_mr = env->mask_dlm;
+    } else {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    target_ulong enable = val & 0x1;
     bool locked = false;
+
     if (!bql_locked()) {
         locked = true;
         bql_lock();
     }
-    if (csrno == CSR_MILMB) {
-        ilm_mapped = memory_region_is_mapped(env->mask_ilm);
-        if (enable && !ilm_mapped) {
-            memory_region_add_subregion_overlap(env->cpu_as_root,
-                                env->ilm_base, env->mask_ilm, 1);
-        } else if (!enable && ilm_mapped) {
-            memory_region_del_subregion(env->cpu_as_root, env->mask_ilm);
-        }
-        env->andes_csr.csrno[csrno] = env->ilm_base | (val & 0xf);
+    if (enable && !lm_mapped) {
+        memory_region_add_subregion_overlap(env->cpu_as_root,
+                                            lm_base, lm_mr, 1);
+    } else if (!enable && lm_mapped) {
+        memory_region_del_subregion(env->cpu_as_root, lm_mr);
     }
-    if (csrno == CSR_MDLMB) {
-        dlm_mapped = memory_region_is_mapped(env->mask_dlm);
-        if (enable && !dlm_mapped) {
-            memory_region_add_subregion_overlap(env->cpu_as_root,
-                                env->dlm_base, env->mask_dlm, 1);
-        } else if (!enable && dlm_mapped) {
-            memory_region_del_subregion(env->cpu_as_root, env->mask_dlm);
-        }
-        env->andes_csr.csrno[csrno] = env->dlm_base | (val & 0xf);
-    }
+    env->andes_csr.csrno[csrno] = lm_base | (val & 0xf);
     tlb_flush(env_cpu(env));
     if (locked) {
         bql_unlock();

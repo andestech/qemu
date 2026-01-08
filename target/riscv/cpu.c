@@ -622,19 +622,27 @@ static const MemoryRegionOps local_mem_ops = {
     },
 };
 
+#define SOC_PROP_SET_DEF_IF_NOT_SET(prop_name, prop, type, def_val) \
+    do { \
+        bool res = get_##type##_from_soc_prop(#prop_name, &prop); \
+        if (!res) { \
+            prop = def_val; \
+        } \
+    } while (0);
+
 static void andes_cpu_lm_init(Object *obj)
 {
     CPURISCVState *env = &RISCV_CPU(obj)->env;
     CPUState *cs = CPU(obj);
 
-    /* get soc lm properties */
+    /* get soc lm properties, if not set, disable the local memory support */
     uint64_t isize, dsize;
-    get_bool_from_soc_prop("ilm_default_enable", &env->ilm_default_enable);
-    get_bool_from_soc_prop("dlm_default_enable", &env->dlm_default_enable);
-    get_uint64_from_soc_prop("ilm_base", &env->ilm_base);
-    get_uint64_from_soc_prop("dlm_base", &env->dlm_base);
-    get_uint64_from_soc_prop("ilm_size", &isize);
-    get_uint64_from_soc_prop("dlm_size", &dsize);
+    SOC_PROP_SET_DEF_IF_NOT_SET(ilm_default_enable, env->ilm_default_enable, bool, false)
+    SOC_PROP_SET_DEF_IF_NOT_SET(dlm_default_enable, env->dlm_default_enable, bool, false)
+    SOC_PROP_SET_DEF_IF_NOT_SET(ilm_base, env->ilm_base, uint64, 0x0)
+    SOC_PROP_SET_DEF_IF_NOT_SET(ilm_size, isize, uint64, 0x0)
+    SOC_PROP_SET_DEF_IF_NOT_SET(dlm_base, env->dlm_base, uint64, 0x0)
+    SOC_PROP_SET_DEF_IF_NOT_SET(dlm_size, dsize, uint64, 0x0)
     env->ilm_size = isize & (uint32_t)-1;
     env->dlm_size = dsize & (uint32_t)-1;
 
@@ -653,10 +661,8 @@ static void andes_cpu_lm_init(Object *obj)
 
     cs->num_ases = 1;
     cpu_address_space_init(cs, 0, "cpu-memory", env->cpu_as_root);
-    env->mask_ilm = g_new(MemoryRegion, 1);
-    env->mask_dlm = g_new(MemoryRegion, 1);
-    env->mask_ilm_alias = g_new(MemoryRegion, 1);
-    env->mask_dlm_alias = g_new(MemoryRegion, 1);
+    env->mask_ilm = isize? g_new(MemoryRegion, 1) : NULL;
+    env->mask_dlm = dsize? g_new(MemoryRegion, 1) : NULL;
 }
 
 static void andes_cpu_lm_realize(DeviceState *dev)
@@ -664,13 +670,11 @@ static void andes_cpu_lm_realize(DeviceState *dev)
     CPURISCVState *env = &RISCV_CPU(dev)->env;
     int lm_num = env->mhartid;
 
-    if (env->ilm_size) {
+    if (env->mask_ilm) {
         g_autofree char *ilm_name =
             g_strdup_printf("%s%d", "riscv.andes.ae350.ilm", lm_num);
         memory_region_init_ram(env->mask_ilm, OBJECT(dev), ilm_name,
                                env->ilm_size, &error_fatal);
-        memory_region_init_alias(env->mask_ilm_alias, OBJECT(dev),
-            "riscv.andes.ae350.ilm_alias", env->mask_ilm, 0, env->ilm_size);
         /* local memory operation */
         env->mask_ilm->ops = &local_mem_ops;
         env->mask_ilm->opaque = env->mask_ilm;
@@ -680,13 +684,11 @@ static void andes_cpu_lm_realize(DeviceState *dev)
                                         env->mask_ilm, 1);
         }
     }
-    if (env->dlm_size) {
+    if (env->mask_dlm) {
         g_autofree char *dlm_name =
             g_strdup_printf("%s%d", "riscv.andes.ae350.dlm", lm_num);
         memory_region_init_ram(env->mask_dlm, OBJECT(dev), dlm_name,
                                env->dlm_size, &error_fatal);
-        memory_region_init_alias(env->mask_dlm_alias, OBJECT(dev),
-            "riscv.andes.ae350.dlm_alias", env->mask_dlm, 0, env->dlm_size);
         /* local memory operation */
         env->mask_dlm->ops = &local_mem_ops;
         env->mask_dlm->opaque = env->mask_dlm;
@@ -2497,21 +2499,25 @@ static void riscv_cpu_reset_hold(Object *obj, ResetType type)
         locked = true;
         bql_lock();
     }
-    if (env->ilm_default_enable) {
-        if (!memory_region_is_mapped(env->mask_ilm)) {
-            memory_region_add_subregion_overlap(env->cpu_as_root,
-                                env->ilm_base, env->mask_ilm, 1);
+    if (env->mask_ilm) {
+        if (env->ilm_default_enable) {
+            if (!memory_region_is_mapped(env->mask_ilm)) {
+                memory_region_add_subregion_overlap(env->cpu_as_root,
+                                    env->ilm_base, env->mask_ilm, 1);
+            }
+        } else if (memory_region_is_mapped(env->mask_ilm)) {
+            memory_region_del_subregion(env->cpu_as_root, env->mask_ilm);
         }
-    } else if (env->mask_ilm && memory_region_is_mapped(env->mask_ilm)) {
-        memory_region_del_subregion(env->cpu_as_root, env->mask_ilm);
     }
-    if (env->dlm_default_enable) {
-        if (!memory_region_is_mapped(env->mask_dlm)) {
-            memory_region_add_subregion_overlap(env->cpu_as_root,
-                                env->dlm_base, env->mask_dlm, 1);
+    if (env->mask_dlm) {
+        if (env->dlm_default_enable) {
+            if (!memory_region_is_mapped(env->mask_dlm)) {
+                memory_region_add_subregion_overlap(env->cpu_as_root,
+                                    env->dlm_base, env->mask_dlm, 1);
+            }
+        } else if (memory_region_is_mapped(env->mask_dlm)) {
+            memory_region_del_subregion(env->cpu_as_root, env->mask_dlm);
         }
-    } else if (env->mask_dlm && memory_region_is_mapped(env->mask_dlm)) {
-        memory_region_del_subregion(env->cpu_as_root, env->mask_dlm);
     }
     tlb_flush(env_cpu(env));
     if (locked) {

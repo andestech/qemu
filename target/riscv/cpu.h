@@ -529,8 +529,6 @@ struct CPUArchState {
     MemoryRegion *cpu_as_mem;
     MemoryRegion *mask_ilm;
     MemoryRegion *mask_dlm;
-    MemoryRegion *mask_ilm_alias;
-    MemoryRegion *mask_dlm_alias;
     uint64_t ilm_base;
     uint64_t dlm_base;
     uint32_t ilm_size;
