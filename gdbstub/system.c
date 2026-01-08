@@ -161,13 +161,20 @@ static void gdb_vm_state_change(void *opaque, bool running, RunState state)
                 type = "";
                 break;
             }
+            /*
+             * If multiple watchpoints are hit, set addr = 0 so the debugger can
+             * determine which one was actually triggered. This behavior is an
+             * Andes-specific extension.
+             */
+            vaddr addr = cpu->watchpoint_hit_count > 1 ?
+                          0 : cpu->watchpoint_hit->vaddr;
             trace_gdbstub_hit_watchpoint(type,
                                          gdb_get_cpu_index(cpu),
-                                         cpu->watchpoint_hit->vaddr);
+                                         addr);
             g_string_printf(buf, "T%02xthread:%s;%swatch:%" VADDR_PRIx ";",
-                            GDB_SIGNAL_TRAP, tid->str, type,
-                            cpu->watchpoint_hit->vaddr);
+                            GDB_SIGNAL_TRAP, tid->str, type, addr);
             cpu->watchpoint_hit = NULL;
+            cpu->watchpoint_hit_count = 0;
             goto send_packet;
         } else {
             trace_gdbstub_hit_break();

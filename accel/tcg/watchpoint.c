@@ -68,6 +68,7 @@ void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
 {
     CPUClass *cc = CPU_GET_CLASS(cpu);
     CPUWatchpoint *wp;
+    size_t wp_hit_count = 0;
 
     assert(tcg_enabled());
     if (cpu->watchpoint_hit) {
@@ -121,23 +122,31 @@ void cpu_check_watchpoint(CPUState *cpu, vaddr addr, vaddr len,
                 wp->flags &= ~BP_WATCHPOINT_HIT;
                 continue;
             }
-            cpu->watchpoint_hit = wp;
 
-            mmap_lock();
-            /* This call also restores vCPU state */
-            tb_check_watchpoint(cpu, ra);
-            if (wp->flags & BP_STOP_BEFORE_ACCESS) {
-                cpu->exception_index = EXCP_DEBUG;
-                mmap_unlock();
-                cpu_loop_exit(cpu);
-            } else {
-                /* Force execution of one insn next time.  */
-                cpu->cflags_next_tb = 1 | CF_NOIRQ | curr_cflags(cpu);
-                mmap_unlock();
-                cpu_loop_exit_noexc(cpu);
+            if (!cpu->watchpoint_hit) {
+                cpu->watchpoint_hit = wp;
             }
+            wp_hit_count++;
         } else {
             wp->flags &= ~BP_WATCHPOINT_HIT;
+        }
+    }
+
+    if (cpu->watchpoint_hit) {
+        cpu->watchpoint_hit_count = wp_hit_count;
+
+        mmap_lock();
+        /* This call also restores vCPU state */
+        tb_check_watchpoint(cpu, ra);
+        if (cpu->watchpoint_hit->flags & BP_STOP_BEFORE_ACCESS) {
+            cpu->exception_index = EXCP_DEBUG;
+            mmap_unlock();
+            cpu_loop_exit(cpu);
+        } else {
+            /* Force execution of one insn next time.  */
+            cpu->cflags_next_tb = 1 | CF_NOIRQ | curr_cflags(cpu);
+            mmap_unlock();
+            cpu_loop_exit_noexc(cpu);
         }
     }
 }

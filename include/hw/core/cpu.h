@@ -524,6 +524,7 @@ struct CPUState {
 
     QTAILQ_HEAD(, CPUWatchpoint) watchpoints;
     CPUWatchpoint *watchpoint_hit;
+    size_t watchpoint_hit_count;
 
     void *opaque;
 
