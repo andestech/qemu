@@ -451,15 +451,15 @@ static bool trans_sdgp(DisasContext *ctx, arg_sdgp *a)
  *** INT4 unit stride load and store
  */
 typedef void gen_helper_ldst_us_int4(TCGv_ptr, TCGv_ptr, TCGv,
-                                TCGv_i32, TCGv_env, TCGv_i32);
+                                TCGv_env, TCGv_i32);
 
 static bool ldst_us_int4_trans(uint32_t vd, uint32_t rs1, uint32_t data,
                           gen_helper_ldst_us_int4 *fn, DisasContext *s,
-                          bool is_store, bool is_sign)
+                          bool is_store)
 {
     TCGv_ptr dest, mask;
     TCGv base;
-    TCGv_i32 desc, sign;
+    TCGv_i32 desc;
 
     TCGLabel *over = gen_new_label();
     tcg_gen_brcondi_tl(TCG_COND_EQ, cpu_vl, 0, over);
@@ -478,12 +478,11 @@ static bool ldst_us_int4_trans(uint32_t vd, uint32_t rs1, uint32_t data,
      */
     desc = tcg_constant_i32(simd_desc(s->cfg_ptr->vlenb / 8,
                                       s->cfg_ptr->vlenb / 8, data));
-    sign = tcg_constant_i32(is_sign);
 
     tcg_gen_addi_ptr(dest, tcg_env, vreg_ofs(s, vd));
     tcg_gen_addi_ptr(mask, tcg_env, vreg_ofs(s, 0));
 
-    fn(dest, mask, base, sign, tcg_env, desc);
+    fn(dest, mask, base, tcg_env, desc);
 
     if (!is_store) {
         mark_vs_dirty(s);
@@ -498,14 +497,24 @@ static bool ld_us_int4_op(DisasContext *s, arg_rmr_andes *a,
 {
     uint32_t data = 0;
     gen_helper_ldst_us_int4 *fn;
-    static gen_helper_ldst_us_int4 * const fns[2][1] = {
-        /* masked unit stride load */
-        { gen_helper_vln8_v_mask},
-        /* unmasked unit stride load */
-        { gen_helper_vln8_v}
+    static gen_helper_ldst_us_int4 * const fns[2][2][1] = {
+        /* unsigned unit stride load */
+        {
+            /* masked */
+            { gen_helper_vlnu8_v_mask},
+            /* unmasked */
+            { gen_helper_vlnu8_v}
+        },
+        /* signed unit stride load */
+        {
+            /* masked */
+            { gen_helper_vln8_v_mask},
+            /* unmasked */
+            { gen_helper_vln8_v}
+        }
     };
 
-    fn =  fns[a->vm][eew];
+    fn =  fns[is_sign][a->vm][eew];
     if (fn == NULL) {
         return false;
     }
@@ -518,11 +527,11 @@ static bool ld_us_int4_op(DisasContext *s, arg_rmr_andes *a,
     uint8_t emul = vext_get_emul(s, eew);
     data = FIELD_DP32(data, VDATA, VM, a->vm);
     data = FIELD_DP32(data, VDATA, LMUL, emul);
-    /* assume nf field value = 1(000) */
+    /* nf field value = 1 */
     data = FIELD_DP32(data, VDATA, NF, 1);
     data = FIELD_DP32(data, VDATA, VTA, s->vta);
     data = FIELD_DP32(data, VDATA, VMA, s->vma);
-    return ldst_us_int4_trans(a->rd, a->rs1, data, fn, s, false, is_sign);
+    return ldst_us_int4_trans(a->rd, a->rs1, data, fn, s, false);
 }
 
 static bool ld_us_int4_check(DisasContext *s, arg_rmr_andes* a, uint8_t eew)

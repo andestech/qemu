@@ -19,6 +19,7 @@
 #include "qemu/osdep.h"
 #include "qemu/host-utils.h"
 #include "qemu/bitops.h"
+#include "qemu/qemu-print.h"
 #include "cpu.h"
 #include "exec/memop.h"
 #include "exec/exec-all.h"
@@ -5710,111 +5711,58 @@ GEN_VEXT_VF_TB(vfpmad_vf, 2)
  *** stride: access vector element from (uni-)strided memory
  */
 /* Modify vd data to byte half */
-static void lde_to_bh(uint32_t odd,
-                   uint32_t sign, uint32_t idx, void *vd)
-{
-    /* we directly use uint8_t and H1 for byte access */
-    uint8_t *cur = ((uint8_t *)vd + H1(idx));
-    uint8_t val;
-    if (odd) {
-        val = (*cur) >> 4;
-        val &= 0x0f; /* mask bits 7:4 to zero */
-    } else {
-        val = (*cur) & 0x0f; /* mask bits 7:4 to zero */
-    }
-    if (sign) {
-        /* check bit 3 */
-        if (val & 0x8) {
-            /* sign-extend for negative */
-            val |= 0xf0;
-        } else {
-            /* sign-extend for positive */
-            val &= 0x0f;
-        }
-    } else {
-        /* zero-extend */
-        val &= 0x0f;
-    }
-    /* write back to vd */
-    *cur = val;
-}
-
 static void
-vext_ldst_int4_stride(void *vd, void *v0, target_ulong base,
-                 target_ulong stride, CPURISCVState *env,
-                 uint32_t desc, uint32_t vm, uint32_t is_sign,
-                 vext_ldst_elem_fn_tlb *ldst_elem,
-                 uint32_t log2_esz, uintptr_t ra)
+vext_ldst_int4_us(void *vd, void *v0, target_ulong base,
+                  CPURISCVState *env, uint32_t desc, bool vm,
+                  bool is_sign, vext_ldst_elem_fn_tlb *ldst_elem,
+                  uint32_t log2_esz, uintptr_t ra)
 {
-    uint32_t i, k;
-    uint32_t nf = vext_nf(desc);
-    uint32_t max_elems = vext_max_elems(desc, log2_esz);
+    uint32_t i;
     uint32_t esz = 1 << log2_esz;
+    uint32_t total_elems = vext_get_total_elems(env, desc, esz);
+    uint32_t vta = vext_vta(desc);
     uint32_t vma = vext_vma(desc);
 
-    /*
-     *  Element_size = 8;
-     *  i = VSTART..(VL-1)
-     *  addr = rs1 + floor(i/2);
-     *  part = i%2;
-     *  nibble[3:0] = MEM(addr)[4*part+3:4*part+0];
-     *  if (vm.E[i] == 1) {
-     *      vd.E[i] = [Sign|Zero]-Extend(nibble[3:0]);
-     *  }
-     */
     for (i = env->vstart; i < env->vl; i++) {
-        k = 0;
-        while (k < nf) {
-            if (!vm && !vext_elem_mask(v0, i)) {
-                /* set masked-off elements to 1s */
-                vext_set_elems_1s(vd, vma, (i + k * max_elems) * esz,
-                                  (i + k * max_elems + 1) * esz);
-                k++;
-                continue;
-            }
-            /*
-             * Since int4 uses the same address for a pair data,
-             * so we caculate address should divide by 2.
-             * Here we don't care about k(nf) > 1 case now
-             */
-            target_ulong addr = base + stride * (i / 2) + (k << log2_esz);
-            ldst_elem(env, adjust_addr(env, addr), i + k * max_elems, vd, ra);
-            lde_to_bh(i % 2, is_sign, i + k * max_elems, vd);
-            k++;
+        if (!vm && !vext_elem_mask(v0, i)) {
+            /* set masked-off elements to 1s */
+            vext_set_elems_1s(vd, vma, i * esz, (i + 1) * esz);
+            continue;
         }
+        target_ulong addr = base + (i / 2);
+        uint8_t tmp;
+        ldst_elem(env, adjust_addr(env, addr), 0, &tmp, ra);
+        uint8_t val = (i % 2) ? (tmp >> 4) : (tmp & 0x0f);
+        val &= 0x0f;
+        if (is_sign && (val & 0x8)) {
+            val |= 0xf0;
+        }
+        *((uint8_t *)vd + H1(i)) = val;
     }
     env->vstart = 0;
-
-    vext_set_tail_elems_1s(env->vl, vd, desc, nf, esz, max_elems);
+    /* set tail elements to 1s */
+    vext_set_elems_1s(vd, vta, env->vl * esz, total_elems * esz);
 }
 
-/*
- * masked unit-stride load and store operation will be a special case of stride,
- * stride = NF * sizeof (MTYPE)
- */
-
-#define GEN_VEXT_LD_US_INT4(NAME, ETYPE, LOAD_FN)                       \
+#define GEN_VEXT_LD_US_INT4(NAME, ETYPE, LOAD_FN, SIGN)                 \
 void HELPER(NAME##_mask)(void *vd, void *v0, target_ulong base,         \
-                         uint32_t is_sign, CPURISCVState *env,          \
-                         uint32_t desc)                                 \
+                         CPURISCVState *env, uint32_t desc)             \
 {                                                                       \
-    uint32_t stride = vext_nf(desc) << ctzl(sizeof(ETYPE));             \
-    vext_ldst_int4_stride(vd, v0, base, stride, env, desc,              \
-                          false, is_sign, LOAD_FN,                      \
-                          ctzl(sizeof(ETYPE)), GETPC());                \
+    vext_ldst_int4_us(vd, v0, base, env, desc,                          \
+                      false, SIGN, LOAD_FN,                             \
+                      ctzl(sizeof(ETYPE)), GETPC());                    \
 }                                                                       \
                                                                         \
 void HELPER(NAME)(void *vd, void *v0, target_ulong base,                \
-                    uint32_t is_sign, CPURISCVState *env,               \
-                    uint32_t desc)                                      \
+                    CPURISCVState *env, uint32_t desc)                  \
 {                                                                       \
-    uint32_t stride = vext_nf(desc) << ctzl(sizeof(ETYPE));             \
-    vext_ldst_int4_stride(vd, v0, base, stride, env, desc,              \
-                          true, is_sign, LOAD_FN,                       \
-                          ctzl(sizeof(ETYPE)), GETPC());                \
+    vext_ldst_int4_us(vd, v0, base, env, desc,                          \
+                      true, SIGN, LOAD_FN,                              \
+                      ctzl(sizeof(ETYPE)), GETPC());                     \
 }
 
-GEN_VEXT_LD_US_INT4(vln8_v, int8_t, lde_b_tlb)
+GEN_VEXT_LD_US_INT4(vln8_v,  int8_t, lde_b_tlb, true)
+GEN_VEXT_LD_US_INT4(vlnu8_v, int8_t, lde_b_tlb, false)
 
 /* Vector Signed Dot Product on 1/4 of SEW */
 #define OPIVV9(NAME, TD, T1, T2, TX1, TX2, HD, HS1, HS2, OP, OP2)       \
@@ -5849,39 +5797,28 @@ void HELPER(vle4_v)(void *vd, target_ulong base,
                     CPURISCVState *env, uint32_t desc)
 {
     target_ulong i;
-    target_ulong vl;
-    target_ulong vstart;
-    uint8_t vl_is_odd = env->vl % 2;
-    uint8_t tmp;
-    void *ptr = &tmp;
-    /*
-     * Element_size = 4;
-     * VSTART = VSTART - (VSTART % 2);
-     * i = VSTART..(VL-1)
-     * addr = rs1 + floor(i/2);
-     * part = i%2;
-     * nibble[3:0] = MEM(addr)[4*part+3:4*part+0];
-     * vd.E[i] = nibble[3:0];
-     */
-    /*
-     * Since int4 uses the same address for a pair data,
-     * loads memory data by byte, once for 2 elements
-     */
-    vstart = env->vstart - (env->vstart % 2);
-    vl = env->vl / 2;
-    for (i = vstart; i < vl; i++) {
+    target_ulong vl = env->vl;
+    target_ulong vstart = env->vstart;
+    
+    /* VSTART = VSTART - (VSTART % 2) */
+    vstart &= ~1;
+    
+    target_ulong vstart_byte = vstart / 2;
+    target_ulong vl_byte = vl / 2;
+
+    /* Handle middle bytes */
+    for (i = vstart_byte; i < vl_byte; i++) {
         target_ulong addr = base + i;
         lde_b_tlb(env, adjust_addr(env, addr), i, vd, GETPC());
     }
-    /* process last element if vl is an odd number */
-    if (vl_is_odd) {
-        target_ulong addr = base + vl;
-        /* Loads byte memory data into tmp variable */
-        lde_b_tlb(env, adjust_addr(env, addr), 0, ptr, GETPC());
-        uint8_t *cur = ((uint8_t *)vd + H1(vl));
-        uint8_t val = (*cur) & 0xf; /* keep bit[0:3] */
-        tmp &= 0xf0; /* keep bit[4:7] */
-        *cur = (tmp | val);
+
+    /* Handle last byte if vl is odd */
+    if (vl % 2 && (vl > vstart)) {
+        target_ulong addr = base + vl_byte;
+        uint8_t data;
+        lde_b_tlb(env, adjust_addr(env, addr), 0, &data, GETPC());
+        uint8_t *cur = ((uint8_t *)vd + H1(vl_byte));
+        *cur = (*cur & 0xf0) | (data & 0x0f);
     }
     env->vstart = 0;
 }
@@ -5952,10 +5889,10 @@ static void do_##NAME(void *vd, void *vs2, int i,      \
     TX2 s2 = *((T2 *)vs2 + HS2(i / 2));                \
     TX2 val;                                           \
     if (i % 2) {                                       \
-        val = s2 & 0x0f;                               \
-    } else {                                           \
         val = s2 >> 4;                                 \
         val &= 0x0f;                                   \
+    } else {                                           \
+        val = s2 & 0x0f;                               \
     }                                                  \
     *((TD *)vd + HD(i)) = OP(val, &env->fp_status);    \
 }
