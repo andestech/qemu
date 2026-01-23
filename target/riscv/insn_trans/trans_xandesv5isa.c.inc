@@ -476,8 +476,8 @@ static bool ldst_us_int4_trans(uint32_t vd, uint32_t rs1, uint32_t data,
      * The first part is vlen in bytes, encoded in maxsz of simd_desc.
      * The second part is lmul, encoded in data of simd_desc.
      */
-    desc = tcg_constant_i32(simd_desc(s->cfg_ptr->vlenb / 8,
-                                      s->cfg_ptr->vlenb / 8, data));
+    desc = tcg_constant_i32(simd_desc(s->cfg_ptr->vlenb,
+                                      s->cfg_ptr->vlenb, data));
 
     tcg_gen_addi_ptr(dest, tcg_env, vreg_ofs(s, vd));
     tcg_gen_addi_ptr(mask, tcg_env, vreg_ofs(s, 0));
@@ -615,8 +615,8 @@ static bool trans_vfwcvt_s_bf16(DisasContext *ctx, arg_vfwcvt_s_bf16 *a)
         data = FIELD_DP32(data, VDATA, VMA, ctx->vma);
         tcg_gen_gvec_3_ptr(vreg_ofs(ctx, a->rd), vreg_ofs(ctx, 0),
                            vreg_ofs(ctx, a->rs2), tcg_env,
-                           ctx->cfg_ptr->vlenb / 8,
-                           ctx->cfg_ptr->vlenb / 8, data,
+                           ctx->cfg_ptr->vlenb,
+                           ctx->cfg_ptr->vlenb, data,
                            gen_helper_andes_vfwcvt_s_bf16);
         mark_vs_dirty(ctx);
         gen_set_label(over);
@@ -649,8 +649,8 @@ static bool trans_vfncvt_bf16_s(DisasContext *ctx, arg_vfncvt_bf16_s *a)
         data = FIELD_DP32(data, VDATA, VMA, ctx->vma);
         tcg_gen_gvec_3_ptr(vreg_ofs(ctx, a->rd), vreg_ofs(ctx, 0),
                            vreg_ofs(ctx, a->rs2), tcg_env,
-                           ctx->cfg_ptr->vlenb / 8,
-                           ctx->cfg_ptr->vlenb / 8, data,
+                           ctx->cfg_ptr->vlenb,
+                           ctx->cfg_ptr->vlenb, data,
                            gen_helper_andes_vfncvt_bf16_s);
         mark_vs_dirty(ctx);
         gen_set_label(over);
@@ -688,8 +688,8 @@ static bool andes_vfpmad_vf(DisasContext *ctx, arg_vfpmadt_vf *a, bool top)
     dest = tcg_temp_new_ptr();
     mask = tcg_temp_new_ptr();
     src2 = tcg_temp_new_ptr();
-    desc = tcg_constant_i32(simd_desc(ctx->cfg_ptr->vlenb / 8,
-                                      ctx->cfg_ptr->vlenb / 8, data));
+    desc = tcg_constant_i32(simd_desc(ctx->cfg_ptr->vlenb,
+                                      ctx->cfg_ptr->vlenb, data));
 
     tcg_gen_addi_ptr(dest, tcg_env, vreg_ofs(ctx, a->rd));
     tcg_gen_addi_ptr(src2, tcg_env, vreg_ofs(ctx, a->rs2));
@@ -772,8 +772,8 @@ static bool ld_small_int(DisasContext *s, arg_rr *a)
      * The first part is vlen in bytes, encoded in maxsz of simd_desc.
      * The second part is lmul, encoded in data of simd_desc.
      */
-    desc = tcg_constant_i32(simd_desc(s->cfg_ptr->vlenb / 8,
-                                      s->cfg_ptr->vlenb / 8, data));
+    desc = tcg_constant_i32(simd_desc(s->cfg_ptr->vlenb,
+                                      s->cfg_ptr->vlenb, data));
 
     tcg_gen_addi_ptr(dest, tcg_env, vreg_ofs(s, a->rd));
 
@@ -833,8 +833,8 @@ static bool trans_##NAME(DisasContext *s, arg_rmr2_andes *a)       \
         data = FIELD_DP32(data, VDATA, VMA, s->vma);               \
         tcg_gen_gvec_3_ptr(vreg_ofs(s, a->rd), vreg_ofs(s, 0),     \
                            vreg_ofs(s, a->rs2), tcg_env,           \
-                           s->cfg_ptr->vlenb / 8,                   \
-                           s->cfg_ptr->vlenb / 8, data,             \
+                           s->cfg_ptr->vlenb,                   \
+                           s->cfg_ptr->vlenb, data,             \
                            fns[s->sew - 1]);                       \
         mark_vs_dirty(s);                                          \
         gen_set_label(over);                                       \
@@ -912,8 +912,8 @@ static bool do_opivv_quad_widen(DisasContext *s, arg_rmrr_andes *a,
         tcg_gen_gvec_4_ptr(vreg_ofs(s, a->rd), vreg_ofs(s, 0),
                            vreg_ofs(s, a->rs1),
                            vreg_ofs(s, a->rs2),
-                           tcg_env, s->cfg_ptr->vlenb / 8,
-                           s->cfg_ptr->vlenb / 8,
+                           tcg_env, s->cfg_ptr->vlenb,
+                           s->cfg_ptr->vlenb,
                            data, fn);
         mark_vs_dirty(s);
         gen_set_label(over);
