@@ -216,7 +216,27 @@ void helper_andes_ace(CPURISCVState *env, target_ulong opcode)
     /* Save current function ra for TCG TB lookup when run ACE insn. */
     env->ace_ra = GETPC();
     int ret = qemu_ace_agent_run_insn(env, opcode);
-    if (ret != 0) {
+    /*
+     * return value enum {
+     *      OK,
+     *      RESERVED_INSN,
+     *      EXCEPTION,
+     *      INTERNAL_ERROR,
+     *      RESUEM_INSN,
+     *      LOCAL_INTERRUPT
+     * };
+     */
+    /* Trigger a local interrupt when ret value is 5 */
+    if (ret == 5) {
+#ifndef CONFIG_USER_ONLY
+        riscv_cpu_update_mip(env, MIP_ANDES_ACEERR, MIP_ANDES_ACEERR);
+        /*
+         * Force precise exception behavior for this interrupt by restoring
+         * PC to current instruction
+         */
+        cpu_loop_exit_restore(env_cpu(env), GETPC());
+#endif
+    } else if (ret != 0) {
         /* wrong ACE instruction seems return RESERVED_INSN(=1), not ILL Insn */
         qemu_printf("Run ace instruction result = %d\n", ret);
         riscv_raise_exception(env, RISCV_EXCP_ILLEGAL_INST, GETPC());

@@ -568,6 +568,11 @@ static int riscv_cpu_andes_m_mode_irq(CPURISCVState *env)
         return IRQ_ANDES_BWEI_M;
     }
 
+    if ((env->mie & MIE_ANDES_ACEERR) && (env->mip & MIP_ANDES_ACEERR)) {
+        env->mip &= ~MIP_ANDES_ACEERR;
+        return IRQ_ANDES_ACEERR_M;
+    }
+
     return 0;
 }
 
@@ -593,6 +598,12 @@ static int riscv_cpu_andes_s_mode_irq(CPURISCVState *env)
                (env->andes_csr.csrno[CSR_SLIP] & MIP_ANDES_BWEI)) {
         env->andes_csr.csrno[CSR_SLIP] &= ~MIP_ANDES_BWEI;
         return IRQ_ANDES_BWEI_S;
+    }
+
+    if ((slie & MIE_ANDES_ACEERR) &&
+        (env->andes_csr.csrno[CSR_SLIP] & MIP_ANDES_ACEERR)) {
+        env->andes_csr.csrno[CSR_SLIP] &= ~MIP_ANDES_ACEERR;
+        return IRQ_ANDES_ACEERR_S;
     }
 
     return 0;
@@ -1980,6 +1991,13 @@ static bool riscv_cpu_andes_check_slideleg(RISCVCPU *cpu, target_long intno)
     if (intno == IRQ_ANDES_PMOVI_S) {
         target_ulong mslideleg = env->andes_csr.csrno[CSR_MSLIDELEG];
         if (mslideleg & MIP_ANDES_PMOVI) {
+            return true;
+        }
+    }
+
+    if (intno == IRQ_ANDES_ACEERR_S) {
+        target_ulong mslideleg = env->andes_csr.csrno[CSR_MSLIDELEG];
+        if (mslideleg & MIP_ANDES_ACEERR) {
             return true;
         }
     }

@@ -329,7 +329,10 @@ uint64_t qemu_get_CSR(CPURISCVState *env, uint32_t index, uint64_t mask)
     target_ulong value;
     riscv_csr_operations ops;
     riscv_get_csr_ops(index , &ops);
-    if (ops.read != NULL) {
+    if (ops.op) {
+        ops.op(env, index, &value, 0, 0);
+        return value & mask;
+    } else if (ops.read != NULL) {
         ops.read(env, index, &value);
         return value & mask;
     }
@@ -341,7 +344,9 @@ void qemu_set_CSR(CPURISCVState *env, uint32_t index,
 {
     riscv_csr_operations ops;
     riscv_get_csr_ops(index , &ops);
-    if (ops.read != NULL && ops.write != NULL) {
+    if (ops.op) {
+        ops.op(env, index, NULL, value, mask);
+    } else if (ops.read != NULL && ops.write != NULL) {
         target_ulong old;
         ops.read(env, index, &old);
         target_ulong new = (value  << CTZLL(mask) & mask) | (old & ~mask);
@@ -353,7 +358,9 @@ void qemu_set_CSR_masked(CPURISCVState *env, uint32_t index, uint64_t value)
 {
     riscv_csr_operations ops;
     riscv_get_csr_ops(index , &ops);
-    if (ops.write != NULL) {
+    if (ops.op) {
+        ops.op(env, index, NULL, value, -1);
+    } else if (ops.write != NULL) {
         ops.write(env, index, value);
     }
 }
