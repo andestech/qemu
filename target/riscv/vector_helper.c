@@ -4898,9 +4898,95 @@ void HELPER(NAME)(void *vd, void *v0, void *vs1,           \
 }
 
 /* Unordered sum */
-GEN_VEXT_FRED(vfredusum_vs_h, uint16_t, uint16_t, H2, H2, nds_float16_add)
-GEN_VEXT_FRED(vfredusum_vs_w, uint32_t, uint32_t, H4, H4, float32_add)
-GEN_VEXT_FRED(vfredusum_vs_d, uint64_t, uint64_t, H8, H8, float64_add)
+#define GEN_VEXT_FRED_USUM(NAME, TD, TS2, HD, HS2, OP)          \
+void HELPER(NAME)(void *vd, void *v0, void *vs1,                \
+                  void *vs2, CPURISCVState *env,                \
+                  uint32_t desc)                                \
+{                                                               \
+    RISCVCPU *cpu = env_archcpu(env);                           \
+    uint32_t vm = vext_vm(desc);                                \
+    uint32_t vl = env->vl;                                      \
+    uint32_t esz = sizeof(TD);                                  \
+    uint32_t vlenb = simd_maxsz(desc);                          \
+    uint32_t vta = vext_vta(desc);                              \
+    TD s1 =  *((TD *)vs1 + HD(0));                              \
+                                                                \
+    if (cpu->cfg.ext_XAndesV5Ops) {                             \
+        if (vl == 0) {                                          \
+            env->vstart = 0;                                    \
+            return;                                             \
+        }                                                       \
+        /* Assume DLEN = VLEN */                                \
+        uint32_t part_num = vlenb / esz;                        \
+        TD *temp_vec = g_new0(TD, part_num);                    \
+        TD zero_val = 0;                                        \
+        if (env->fp_status.float_rounding_mode !=               \
+            float_round_down) {                                 \
+             /* Use -0.0 for not round-down */                  \
+             zero_val = (TD)((uint64_t)1 << (esz * 8 - 1));     \
+        }                                                       \
+        /* Initialize and accumulate */                         \
+        temp_vec[0] = s1;                                       \
+        for (uint32_t i = 1; i < part_num; i++) {               \
+            temp_vec[i] = zero_val;                             \
+        }                                                       \
+        for (uint32_t i = 0; i < part_num; i++) {               \
+            for (uint32_t tt = i; tt < vl; tt += part_num) {    \
+                TD v2 = (TD)(*((TS2 *)vs2 + HS2(tt)));          \
+                if (!vm && !vext_elem_mask(v0, tt)) {           \
+                    v2 = zero_val;                              \
+                }                                               \
+                if (tt == i && i != 0) {                        \
+                    temp_vec[i] = v2;                           \
+                } else {                                        \
+                    temp_vec[i] = OP(temp_vec[i], v2,           \
+                                     &env->fp_status);          \
+                }                                               \
+            }                                                   \
+        }                                                       \
+        /* Reduction */                                         \
+        uint32_t merge_num = part_num;                          \
+        uint32_t el_per_64 = 8 / esz;                           \
+        while (merge_num > el_per_64) {                         \
+            for (uint32_t i = 0; i < merge_num;                 \
+                 i += (el_per_64 * 2)) {                        \
+                for (uint32_t j = 0; j < el_per_64; j++) {      \
+                    temp_vec[i / 2 + j] = OP(temp_vec[i + j],   \
+                        temp_vec[i + j + el_per_64],            \
+                        &env->fp_status);                       \
+                }                                               \
+            }                                                   \
+            merge_num /= 2;                                     \
+        }                                                       \
+        while (merge_num > 1) {                                 \
+            for (uint32_t i = 0; i < merge_num; i += 2) {       \
+                temp_vec[i / 2] = OP(temp_vec[i],               \
+                                     temp_vec[i + 1],           \
+                                     &env->fp_status);          \
+            }                                                   \
+            merge_num /= 2;                                     \
+        }                                                       \
+        s1 = temp_vec[0];                                       \
+        g_free(temp_vec);                                       \
+    } else {                                                    \
+        uint32_t i;                                             \
+        for (i = env->vstart; i < vl; i++) {                    \
+            TS2 s2 = *((TS2 *)vs2 + HS2(i));                    \
+            if (!vm && !vext_elem_mask(v0, i)) {                \
+                continue;                                       \
+            }                                                   \
+            s1 = OP(s1, (TD)s2, &env->fp_status);               \
+        }                                                       \
+    }                                                           \
+    *((TD *)vd + HD(0)) = s1;                                   \
+    env->vstart = 0;                                            \
+    /* set tail elements to 1s */                               \
+    vext_set_elems_1s(vd, vta, esz, vlenb);                     \
+}
+
+GEN_VEXT_FRED_USUM(vfredusum_vs_h, uint16_t, uint16_t, H2, H2, nds_float16_add)
+GEN_VEXT_FRED_USUM(vfredusum_vs_w, uint32_t, uint32_t, H4, H4, float32_add)
+GEN_VEXT_FRED_USUM(vfredusum_vs_d, uint64_t, uint64_t, H8, H8, float64_add)
 
 /* Ordered sum */
 GEN_VEXT_FRED(vfredosum_vs_h, uint16_t, uint16_t, H2, H2, nds_float16_add)
