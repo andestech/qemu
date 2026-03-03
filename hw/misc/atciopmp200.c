@@ -1208,7 +1208,7 @@ static void atciopmp200_iommu_mr_class_init(ObjectClass *klass, void *data)
 
 static Property atciopmp200_property[] = {
     DEFINE_PROP_UINT32("k", Atciopmp200state, k, 6),
-    DEFINE_PROP_UINT32("rrid_num", Atciopmp200state, rrid_num, 8),
+    DEFINE_PROP_UINT32("rrid_num", Atciopmp200state, rrid_num, 16),
     DEFINE_PROP_UINT32("md_num", Atciopmp200state, md_num, 8),
     DEFINE_PROP_UINT32("err_rdata", Atciopmp200state, err_rdata, 0x0),
     DEFINE_PROP_BOOL("peis", Atciopmp200state, peis, true),
