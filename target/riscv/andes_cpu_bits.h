@@ -174,13 +174,19 @@
 #define CSRIND_ISEL_SHADOW      0x1000
 #define CSRIND_ISEL_IMPD01      0x2000
 #define CSRIND_ISEL_IMPD23      0x2001
+#define CSRIND_ISEL_IMPD4       0x2002
+#define CSRIND_ISEL_PMA_FIRST   0x3000
+#define CSRIND_ISEL_PMA_LAST    0x303f
 #define CSRIND_IMPD0            0x0
 #define CSRIND_IMPD1            0x1
 #define CSRIND_IMPD2            0x2
 #define CSRIND_IMPD3            0x3
+#define CSRIND_IMPD4            0x4
 #define CSRIND_SHADOW_CFG       0x10
 #define CSRIND_SHADOW_CTL       0x11
 #define CSRIND_SHADOW_DBG       0x12
+#define CSRIND_IPMACFG0         0x20
+#define CSRIND_IPMAADDR48       0x60
 
 /* ========= AndeStar V5 CPUID definitions ========= */
 #define ANDES_CPUID_MSB_32      (1 << 31)

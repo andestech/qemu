@@ -255,6 +255,7 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define MASK_MMSC_CFG3_SHADOW               (0x1 << 8)
 #define MASK_MMSC_CFG3_ROC                  (0x1 << 9)
 #define MASK_MMSC_CFG3_AMM                  (0x1 << 10)
+#define MASK_MMSC_CFG3_TEE                  (0x1 << 11)
 #define MASK_MMSC_CFG3_ECC_DETECTION_ONLY   (0x1 << 12)
 #define MASK_MMSC_CFG3_IC_ECC_GRAN          (0x7 << 13)
 #define MASK_MMSC_CFG3_ILM_ECC_GRAN         (0x7 << 16)
@@ -266,9 +267,15 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define MASK_MMSC_CFG3_MSC_EXT4             ((uint64_t)0x1 << 31)
 /* for RV64 mmsc_cfg_3 */
 #define MASK_MMSC_CFG3_PPMA_VER             ((uint64_t)0x7 << 32)
+#define MASK_MMSC_CFG3_L1D_BF               ((uint64_t)0x1 << 35)
+#define MASK_MMSC_CFG3_EDGE_TRIM            ((uint64_t)0x1 << 36)
+#define MASK_MMSC_CFG3_BUS_TO               ((uint64_t)0x1 << 37)
 
 /* mmsc_cfg4 */
 #define MASK_MMSC_CFG4_PPMA_VER             (0x7)
+#define MASK_MMSC_CFG4_L1D_BF               (0x1 << 3)
+#define MASK_MMSC_CFG4_EDGE_TRIM            (0x1 << 4)
+#define MASK_MMSC_CFG4_BUS_TO               (0x1 << 5)
 
 /* mcause */
 #define MASK_MCAUSE_EXCEPTION_CODE_32       (~MASK_MCAUSE_INTERRUPT_32)
@@ -284,6 +291,7 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define MASK_MMISC_CTL_BRPE                 (0x1 << 3)
 #define MASK_MMISC_CTL_ACES                 (0x3 << 4)
 #define MASK_MMISC_CTL_MSA_UNA              (0x1 << 6)
+#define MASK_MMISC_CTL_NT                   (0x1 << 7)
 #define MASK_MMISC_CTL_NBLD_EN              (0x1 << 8)
 #define MASK_MMISC_CTL_NEWNMI               (0x1 << 9)
 #define MASK_MMISC_CTL_VCGL1_EN             (0x1 << 10)
@@ -459,6 +467,19 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define MASK_LOCAL_IRQ_IMECCDMR             (0x1 << 19)
 #define MASK_LOCAL_IRQ_ACCERR               (0x1 << 24)
 
+/* ipmacfg */
+#define MASK_IPMACFG_ETYP                   (0x3)
+#define MASK_IPMACFG_MTYP                   (0xF << 4)
+#define MASK_IPMACFG_NS                     (0x1 << 8)
+#define MASK_IPMACFG_NOSH                   (0x1 << 14)
+#define MASK_IPMACFG_NAMO                   (0x1 << 15)
+
+/* pmacfg */
+#define MASK_PMACFG_ETYP                    (0x3)
+#define MASK_PMACFG_MTYP                    (0xF << 2)
+#define MASK_PMACFG_NAMO                    (0x1 << 6)
+#define MASK_PMACFG_NOSH                    (0x1 << 7)
+
 /* write masks */
 #define WRITE_MASK_CSR_MCOUNTEREN           0x7F
 #define WRITE_MASK_CSR_MECC_CODE_32         0x7F
@@ -481,9 +502,11 @@ typedef void (*fp_spec_csr_init_fn)(AndesCsr *);
 #define WRITE_MASK_CSR_MVEC_CFG             0x3FFFF
 #define WRITE_MASK_CSR_MXSTATUS             0x3FF
 #define WRITE_MASK_CSR_SMDCAUSE             0x7F
-#define WRITE_MASK_CSR_MMISC_CTL            0x3F7F
+#define WRITE_MASK_CSR_MMISC_CTL            0x3FFF
 #define WRITE_MASK_CSR_SMISC_CTL            0x30
-#define WRITE_MASK_CSR_MCACHE_CTL           0x7FFFFF
+#define WRITE_MASK_CSR_MCACHE_CTL_32        0x3FFFFFF
+#define WRITE_MASK_CSR_MCACHE_CTL_64        0x73FFF87F03FFFFFFULL
+#define WRITE_MASK_CSR_IPMACFG              0xC1F3
 
 void andes_csr_configs(CPURISCVState *env);
 void andes_csr_init(AndesCsr *);

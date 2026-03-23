@@ -151,40 +151,48 @@ static RISCVException ppi(CPURISCVState *env, int csrno)
 static RISCVException ppma(CPURISCVState *env, int csrno)
 {
     AndesCsr *csr = &env->andes_csr;
+    uint8_t ppma_ver;
+
     if (get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_PPMA) == 0) {
         return RISCV_EXCP_ILLEGAL_INST;
-    } else {
-        if (riscv_cpu_mxl(env) != MXL_RV32) {
-            /* 16-entry PPMA in RV64 */
-            if (get_field(csr->csrno[CSR_MMSC_CFG3],
-                          MASK_MMSC_CFG3_PPMA_VER) == 0) {
-                if (csrno == CSR_PMACFG1 ||
-                    (csrno >= CSR_PMACFG3 && csrno <= CSR_PMACFG11) ||
-                    csrno > CSR_PMAADDR15) {
-                    return RISCV_EXCP_ILLEGAL_INST;
-                }
-            /* 48-entry PPMA in RV64 */
-            } else if (get_field(csr->csrno[CSR_MMSC_CFG3],
-                                 MASK_MMSC_CFG3_PPMA_VER) == 2) {
-                if (csrno == CSR_PMACFG1 || csrno == CSR_PMACFG3 ||
-                    csrno == CSR_PMACFG5 || csrno == CSR_PMACFG7 ||
-                    csrno == CSR_PMACFG9 || csrno == CSR_PMACFG11) {
-                    return RISCV_EXCP_ILLEGAL_INST;
-                }
+    }
+
+    if (riscv_cpu_mxl(env) != MXL_RV32) {
+        ppma_ver = get_field(csr->csrno[CSR_MMSC_CFG3], MASK_MMSC_CFG3_PPMA_VER);
+        /* 16-entry PPMA in RV64 */
+        if (ppma_ver == 0) {
+            if (csrno == CSR_PMACFG1 ||
+                (csrno >= CSR_PMACFG3 && csrno <= CSR_PMACFG11) ||
+                csrno > CSR_PMAADDR15) {
+                return RISCV_EXCP_ILLEGAL_INST;
+            }
+        /* 48-entry PPMA in RV64 */
+        } else if (ppma_ver == 2) {
+            if (csrno == CSR_PMACFG1 || csrno == CSR_PMACFG3 ||
+                csrno == CSR_PMACFG5 || csrno == CSR_PMACFG7 ||
+                csrno == CSR_PMACFG9 || csrno == CSR_PMACFG11) {
+                return RISCV_EXCP_ILLEGAL_INST;
             }
         } else {
-            /* 16-entry PPMA in RV32 */
-            if (get_field(csr->csrno[CSR_MMSC_CFG4],
-                          MASK_MMSC_CFG4_PPMA_VER) == 0) {
-                if ((csrno >= CSR_PMACFG4 && csrno <= CSR_PMACFG11) ||
-                    csrno > CSR_PMAADDR15) {
-                    return RISCV_EXCP_ILLEGAL_INST;
-                }
-            }
-            /* 48-entry PPMA in RV32 can access all PMA CSRs*/
+            return RISCV_EXCP_ILLEGAL_INST;
         }
-        return RISCV_EXCP_NONE;
+    } else {
+        ppma_ver = get_field(csr->csrno[CSR_MMSC_CFG4], MASK_MMSC_CFG4_PPMA_VER);
+        /* 16-entry PPMA in RV32 */
+        if (ppma_ver == 0) {
+            if ((csrno >= CSR_PMACFG4 && csrno <= CSR_PMACFG11) ||
+                csrno > CSR_PMAADDR15) {
+                return RISCV_EXCP_ILLEGAL_INST;
+            }
+        /* 48-entry PPMA in RV32 */
+        } else if (ppma_ver == 2) {
+            /* Can access all pmacfg0-11 and pmaaddr0-47 */
+        } else {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
     }
+
+    return RISCV_EXCP_NONE;
 }
 
 static RISCVException fio(CPURISCVState *env, int csrno)
@@ -423,7 +431,8 @@ static RISCVException mmisc_ctl(CPURISCVState *env, int csrno)
     if (get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_ACE) == 1
           || get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_VPLIC) == 1
           || get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_ECD) == 1
-          || get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_EV5PE) == 1) {
+          || get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_EV5PE) == 1
+          || get_field(csr->csrno[CSR_MMSC_CFG3], MASK_MMSC_CFG3_TEE) == 1) {
         return RISCV_EXCP_NONE;
     }
     return RISCV_EXCP_ILLEGAL_INST;
@@ -475,7 +484,18 @@ static RISCVException write_mcache_ctl(CPURISCVState *env,
     } else {
         val &= ~(1UL << V5_MCACHE_CTL_DC_COHSTA);
     }
-    env->andes_csr.csrno[csrno] = val & WRITE_MASK_CSR_MCACHE_CTL;
+
+    switch (riscv_cpu_mxl(env)) {
+    case MXL_RV32:
+        env->andes_csr.csrno[csrno] = val & WRITE_MASK_CSR_MCACHE_CTL_32;
+        break;
+    case MXL_RV64:
+        env->andes_csr.csrno[csrno] = val & WRITE_MASK_CSR_MCACHE_CTL_64;
+        break;
+    default:
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
     return RISCV_EXCP_NONE;
 }
 
@@ -966,6 +986,213 @@ static RISCVException rmw_impd23(CPURISCVState *env, int csrno,
     return RISCV_EXCP_NONE;
 }
 
+static RISCVException rmw_impd4(CPURISCVState *env, int csrno,
+                                 target_ulong *ret_value,
+                                 target_ulong new_value,
+                                 target_ulong write_mask)
+{
+    int xireg_offset = csrno & 0xf;
+    bool bus_to = false;
+
+    if (riscv_cpu_mxl(env) == MXL_RV32) {
+        bus_to = get_field(env->andes_csr.csrno[CSR_MMSC_CFG4],
+                           MASK_MMSC_CFG4_BUS_TO);
+    } else {
+        bus_to = get_field(env->andes_csr.csrno[CSR_MMSC_CFG3],
+                           MASK_MMSC_CFG3_BUS_TO);
+    }
+
+    if (!bus_to) {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    if (xireg_offset != 0x2) {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    if (ret_value) {
+        *ret_value = env->andes_csr.csrind[CSRIND_IMPD4];
+    }
+
+    if (write_mask) {
+        env->andes_csr.csrind[CSRIND_IMPD4] = new_value & write_mask;
+    }
+
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException rmw_ipmaaddr(CPURISCVState *env, int csrno,
+                                   target_ulong isel,
+                                   target_ulong *ret_value,
+                                   target_ulong new_value,
+                                   target_ulong write_mask)
+{
+    AndesCsr *csr = &env->andes_csr;
+    int xireg_offset = csrno & 0xf;
+    int entry_idx = isel & 0x3f;
+    uint8_t ppma_ver;
+    bool ppma_en = get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_PPMA);
+
+    if (!ppma_en || xireg_offset != 0x2) {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    if (riscv_cpu_mxl(env) != MXL_RV32) {
+        ppma_ver = get_field(csr->csrno[CSR_MMSC_CFG3],
+                             MASK_MMSC_CFG3_PPMA_VER);
+    } else {
+        ppma_ver = get_field(csr->csrno[CSR_MMSC_CFG4],
+                             MASK_MMSC_CFG4_PPMA_VER);
+    }
+
+    /* Range check based on PPMA_VER */
+    if (entry_idx <= 15) {
+        if (ppma_ver < 4) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    } else if (entry_idx <= 31) {
+        if (ppma_ver < 5) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    } else if (entry_idx <= 47) {
+        if (ppma_ver < 6) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    } else {
+        if (ppma_ver != 7) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    }
+
+    target_ulong *addr_reg;
+    if (entry_idx < 48) {
+        addr_reg = &csr->csrno[CSR_PMAADDR0 + entry_idx];
+    } else {
+        addr_reg = &csr->csrind[CSRIND_IPMAADDR48 + (entry_idx - 48)];
+    }
+    if (ret_value) {
+        *ret_value = *addr_reg;
+    }
+    if (write_mask) {
+        *addr_reg = (*addr_reg & ~write_mask) | (new_value & write_mask);
+    }
+
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException rmw_ipmacfg(CPURISCVState *env, int csrno,
+                                  target_ulong isel,
+                                  target_ulong *ret_value,
+                                  target_ulong new_value,
+                                  target_ulong write_mask)
+{
+    AndesCsr *csr = &env->andes_csr;
+    int xireg_offset = csrno & 0xf;
+    int entry_idx = isel & 0x3f;
+    uint8_t ppma_ver;
+    bool ppma_en = get_field(csr->csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_PPMA);
+
+    if (!ppma_en || xireg_offset != 0x3) {
+        return RISCV_EXCP_ILLEGAL_INST;
+    }
+
+    if (riscv_cpu_mxl(env) != MXL_RV32) {
+        ppma_ver = get_field(csr->csrno[CSR_MMSC_CFG3],
+                             MASK_MMSC_CFG3_PPMA_VER);
+    } else {
+        ppma_ver = get_field(csr->csrno[CSR_MMSC_CFG4],
+                             MASK_MMSC_CFG4_PPMA_VER);
+    }
+
+    /* Range check based on PPMA_VER */
+    if (entry_idx <= 15) {
+        if (ppma_ver < 4) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    } else if (entry_idx <= 31) {
+        if (ppma_ver < 5) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    } else if (entry_idx <= 47) {
+        if (ppma_ver < 6) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    } else {
+        if (ppma_ver != 7) {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    }
+
+    bool is_rv64 = (riscv_cpu_mxl(env) != MXL_RV32);
+    target_ulong *ipmacfg_reg = &csr->csrind[CSRIND_IPMACFG0 + entry_idx];
+
+    if (entry_idx < 48) {
+        target_ulong *cfg_reg;
+        int shift;
+        if (is_rv64) {
+            cfg_reg = &csr->csrno[CSR_PMACFG0 + (entry_idx >> 3) * 2];
+            shift = (entry_idx & 0x7) << 3;
+        } else {
+            cfg_reg = &csr->csrno[CSR_PMACFG0 + (entry_idx >> 2)];
+            shift = (entry_idx & 0x3) << 3;
+        }
+
+        uint8_t pma_val = (*cfg_reg >> shift) & 0xFF;
+
+        if (ret_value) {
+            target_ulong res = 0;
+            res |= (pma_val & MASK_PMACFG_ETYP);
+            /* MTYP [5:2] -> [7:4] */
+            res |= (target_ulong)(pma_val & MASK_PMACFG_MTYP) << 2;
+            /* NOSH [7] -> [14] */
+            res |= (target_ulong)(pma_val & MASK_PMACFG_NOSH) << 7;
+            /* NAMO [6] -> [15] */
+            res |= (target_ulong)(pma_val & MASK_PMACFG_NAMO) << 9;
+            res |= (*ipmacfg_reg & MASK_IPMACFG_NS);
+            *ret_value = res;
+        }
+
+        if (write_mask) {
+            uint8_t new_pma_val = 0;
+            uint8_t pma_mask = 0;
+
+            pma_mask |= (write_mask & MASK_IPMACFG_ETYP);
+            new_pma_val |= (new_value & MASK_IPMACFG_ETYP);
+
+            pma_mask |= (write_mask & MASK_IPMACFG_MTYP) >> 2;
+            new_pma_val |= (new_value & MASK_IPMACFG_MTYP) >> 2;
+
+            pma_mask |= (write_mask & MASK_IPMACFG_NOSH) >> 7;
+            new_pma_val |= (new_value & MASK_IPMACFG_NOSH) >> 7;
+
+            pma_mask |= (write_mask & MASK_IPMACFG_NAMO) >> 9;
+            new_pma_val |= (new_value & MASK_IPMACFG_NAMO) >> 9;
+
+            target_ulong full_mask = (target_ulong)pma_mask << shift;
+            target_ulong full_val = (target_ulong)new_pma_val << shift;
+
+            *cfg_reg = (*cfg_reg & ~full_mask) | (full_val & full_mask);
+
+            if (write_mask & MASK_IPMACFG_NS) {
+                *ipmacfg_reg = (*ipmacfg_reg & ~MASK_IPMACFG_NS) |
+                               (new_value & MASK_IPMACFG_NS);
+            }
+        }
+    } else {
+        /* Extended entries 48-63: store full XLEN in one slot each */
+        target_ulong final_write_mask = write_mask & WRITE_MASK_CSR_IPMACFG;
+
+        if (ret_value) {
+            *ret_value = *ipmacfg_reg;
+        }
+        if (final_write_mask) {
+            *ipmacfg_reg = (*ipmacfg_reg & ~final_write_mask) |
+                           (new_value & final_write_mask);
+        }
+    }
+    return RISCV_EXCP_NONE;
+}
+
 static RISCVException rmw_shadow(CPURISCVState *env, int csrno,
                                  target_ulong *ret_value,
                                  target_ulong new_value,
@@ -1146,11 +1373,17 @@ static AndesCsrConfigInfo csr_mmsc_cfg3_map[]  = {
 #ifdef TARGET_RISCV64
     /* bits:[32] */
     {CONFIG_NUMBER, MASK_MMSC_CFG3_PPMA_VER, "ppma-ver"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG3_L1D_BF, "mmsc-cfg-l1d-bf"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG3_EDGE_TRIM, "mmsc-cfg-edge-trim"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG3_BUS_TO, "mmsc-cfg-bus-to"},
 #endif
 };
 
 static AndesCsrConfigInfo csr_mmsc_cfg4_map[]  = {
     {CONFIG_NUMBER, MASK_MMSC_CFG4_PPMA_VER, "ppma-ver"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG4_L1D_BF, "mmsc-cfg-l1d-bf"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG4_EDGE_TRIM, "mmsc-cfg-edge-trim"},
+    {CONFIG_BOOL,   MASK_MMSC_CFG4_BUS_TO, "mmsc-cfg-bus-to"},
 };
 
 static AndesCsrConfigInfo csr_mrvarch_cfg_map[] = {
@@ -1234,8 +1467,10 @@ void andes_csr_configs(CPURISCVState *env)
     /* Update mmsc_cfg */
     target_ulong mmsc_init_val = env->andes_csr.csrno[CSR_MMSC_CFG];
     andes_csr_from_config(csr_mmsc_cfg_map,
-        sizeof(csr_mmsc_cfg_map) / sizeof(AndesCsrConfigInfo), &mmsc_init_val);
+        sizeof(csr_mmsc_cfg_map) / sizeof(AndesCsrConfigInfo),
+        &mmsc_init_val);
     env->andes_csr.csrno[CSR_MMSC_CFG] = mmsc_init_val;
+
     if (env_archcpu(env)->cfg.ext_XAndesAce) {
         env->andes_csr.csrno[CSR_MMSC_CFG] = set_field(
             env->andes_csr.csrno[CSR_MMSC_CFG], MASK_MMSC_CFG_ACE, true);
@@ -1416,11 +1651,29 @@ RISCVException andes_rmw_xireg_csrind(CPURISCVState *env, int csrno,
                                       target_ulong new_value,
                                       target_ulong write_mask)
 {
-    switch (isel & CSRIND_ISEL_MASK) {
+    target_ulong isel_masked = isel & CSRIND_ISEL_MASK;
+
+    if (isel_masked >= CSRIND_ISEL_PMA_FIRST &&
+        isel_masked <= CSRIND_ISEL_PMA_LAST) {
+        int xireg_offset = csrno & 0xf;
+        if (xireg_offset == 0x2) {
+            return rmw_ipmaaddr(env, csrno, isel, ret_value,
+                                 new_value, write_mask);
+        } else if (xireg_offset == 0x3) {
+            return rmw_ipmacfg(env, csrno, isel, ret_value,
+                                new_value, write_mask);
+        } else {
+            return RISCV_EXCP_ILLEGAL_INST;
+        }
+    }
+
+    switch (isel_masked) {
     case CSRIND_ISEL_IMPD01:
         return rmw_impd01(env, csrno, ret_value, new_value, write_mask);
     case CSRIND_ISEL_IMPD23:
         return rmw_impd23(env, csrno, ret_value, new_value, write_mask);
+    case CSRIND_ISEL_IMPD4:
+        return rmw_impd4(env, csrno, ret_value, new_value, write_mask);
     case CSRIND_ISEL_SHADOW:
         return rmw_shadow(env, csrno, ret_value, new_value, write_mask);
     default:
